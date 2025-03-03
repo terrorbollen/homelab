@@ -1,0 +1,48 @@
+# Default values for mediaserver chart
+# This is a YAML-formatted file.
+
+# Enable or disable each application
+bazarr:
+  enabled: true
+  # Values from charts/mediaserver/chart/bazarr/values.yaml will be used
+  # You can override them here
+
+emby:
+  enabled: true
+
+prowlarr:
+  enabled: true
+
+radarr:
+  enabled: true
+
+sonarr:
+  enabled: true
+
+transmission:
+  enabled: true
+
+# Ingress configuration
+ingress:
+  enabled: true
+  class: traefik
+  ip: "192.168.0.20"
+  host: "" # Leave empty to use nip.io with the IP
+  annotations: {}
+
+# Storage configuration
+storage:
+  persistentVolume:
+    create: true
+    name: "media-ssd"
+    labels:
+      type: "local"
+    capacity: "1000Gi"
+    accessMode: ReadWriteMany
+    hostPath: "/mnt/ssd/media"
+  
+  persistentVolumeClaim:
+    create: true
+    name: "media-ssd"
+    accessMode: ReadWriteMany
+    capacity: "1000Gi"
