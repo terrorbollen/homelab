@@ -1,0 +1,40 @@
+# Default values for isak-friis-jespersen chart
+replicaCount: 3
+
+image:
+  repository: gigday/ifj
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+namespace: isakfriis-jespersen
+
+service:
+  type: LoadBalancer
+  port: 8081
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+  hosts:
+    - host: friis-jespersen.dev
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: friisjespersen-com-tls
+      hosts:
+        - friis-jespersen.dev
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
