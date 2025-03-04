@@ -1,13 +1,23 @@
-{{- if .Values.storage.persistentVolumeClaim.create }}
+{{- if or .Values.storage.persistentVolumeClaim.create .Values.storage.persistentVolumeClaim.adopt }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   namespace: {{ .Release.Namespace }}
   name: {{ .Values.storage.persistentVolumeClaim.name }}
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
 spec:
+  {{- if .Values.storage.persistentVolumeClaim.create }}
   accessModes:
     - {{ .Values.storage.persistentVolumeClaim.accessMode }}
   resources:
     requests:
       storage: {{ .Values.storage.persistentVolumeClaim.capacity }}
+  {{- else }}
+  # When adopting an existing PVC, we don't specify the spec to avoid overwriting
+  # existing configuration that might cause data loss
+  {{- end }}
 {{- end }}

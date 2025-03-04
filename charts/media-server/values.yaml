@@ -1,26 +1,243 @@
 # Default values for mediaserver chart
 # This is a YAML-formatted file.
 
-# Enable or disable each application
 bazarr:
-  enabled: true
-  # Values from charts/mediaserver/chart/bazarr/values.yaml will be used
-  # You can override them here
+  replicaCount: 1
+  image:
+    repository: linuxserver/bazarr
+    tag: arm64v8-latest 
+    pullPolicy: IfNotPresent
+
+  env:
+    - name: TZ
+      value: UTC
+    - name: PUID
+      value: "1000"
+    - name: PGID
+      value: "1000"
+
+  service:
+    main:
+      ports:
+        http:
+          port: 80
+          targetPort: 6767
+
+  persistence:
+    configs:
+      enabled: true
+      type: pvc
+      mountPath: "/config"
+      subPath:  "configs/bazarr"
+      existingClaim: media-ssd
+
+    # library:
+    #   enabled: true
+    #   type: pvc
+    #   mountPath: "/movies"
+    #   subPath: "library/movies"
+    #   existingClaim: media-ssd
 
 emby:
-  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: linuxserver/emby
+
+
+    pullPolicy: IfNotPresent
+
+  env:
+    - name: TZ
+      value: "UTC"
+    - name: UID
+      value: "1000"
+    - name: GID
+      value: "1000"
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  volumes:
+    - name: "media-ssd"
+      persistentVolumeClaim:
+        claimName: "media-ssd"
+
+  volumeMounts:
+    - name: media-ssd
+      mountPath: "/config"
+      subPath: "configs/emby"
+    - name: media-ssd
+      mountPath: "/tv"
+      subPath: "library/tv"
+    - name: media-ssd
+      mountPath: "/movies"
+      subPath: "library/movies"
 
 prowlarr:
-  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: linuxserver/prowlarr
+    tag: arm64v8-latest 
+    pullPolicy: IfNotPresent
+
+  env:
+    - name: TZ
+      value: UTC
+    - name: PUID
+      value: "1000"
+    - name: PGID
+      value: "1000"
+
+  service:
+    main:
+      ports:
+        http:
+          port: 80
+          targetPort: 9696
+
+  persistence:
+    configs:
+      enabled: true
+      existingClaim: media-ssd
+      mountPath: /config
+      subPath: configs/prowlarr
 
 radarr:
-  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: linuxserver/radarr
+    pullPolicy: IfNotPresent
+
+  env:
+    - name: PUID
+      value: "1000"
+    - name: PGID
+      value: "1000"
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  volumes:
+    - name: "media-ssd"
+      persistentVolumeClaim:
+        claimName: "media-ssd"
+
+  volumeMounts:
+    - name: "media-ssd"
+      mountPath: "/config"
+      subPath: "configs/radarr"
+    - name: "media-ssd"
+      mountPath: "/downloads/transmission"
+      subPath: "downloads/transmission"
+    - name: media-ssd
+      mountPath: "/movies"
+      subPath: "library/movies"
 
 sonarr:
-  enabled: true
+  replicaCount: 1
 
-transmission:
-  enabled: true
+  image:
+    repository: linuxserver/sonarr
+    tag: latest # ARM image
+    pullPolicy: IfNotPresent
+
+  env:
+    - name: PUID
+      value: "1000"
+    - name: PGID
+      value: "1000"
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  volumes:
+    - name: media-ssd
+      persistentVolumeClaim:
+        claimName: "media-ssd"
+
+  volumeMounts:
+    - name: media-ssd
+      mountPath: "/config"
+      subPath: "configs/sonarr"
+    - name: media-ssd
+      mountPath: "/downloads/transmission"
+      subPath: "downloads/transmission"
+    - name: media-ssd
+      mountPath: "/tv"
+      subPath: "library/tv"
+
+transmission-openvpn:
+  replicaCount: 1
+
+  image:
+    repository: "haugene/transmission-openvpn"
+    tag: "latest"
+    pullPolicy: "IfNotPresent"
+
+  env:
+    - name: OPENVPN_PROVIDER
+      value: "NORDVPN"
+    - name: OPENVPN_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: "openvpn"
+          key: "username"
+    - name: OPENVPN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: "openvpn"
+          key: "password"
+    - name: NORDVPN_PROTOCOL
+      value: "TCP"
+    - name: NORDVPN_COUNTRY
+      value: "SE" # Country where we want to download over VPN
+    - name: NORDVPN_CATEGORY
+      value: "P2P" # VPN Type
+    - name: LOCAL_NETWORK
+      value: "192.168.0.0/24"
+    - name: TRANSMISSION_PEER_PORT
+      value: "47444"
+    - name: TRANSMISSION_DOWNLOAD_DIR
+      value: "/downloads/transmission"
+    - name: PUID
+      value: "1000"
+    - name: PGID
+      value: "1000"
+    - name: CREATE_TUN_DEVICE
+      value: "false"
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  volumes:
+    - name: "media-ssd"
+      persistentVolumeClaim:
+        claimName: "media-ssd"
+    - name: "dev-tun"
+      hostPath:
+        path: "/dev/net/tun"
+
+  volumeMounts:
+    - name: "media-ssd"
+      mountPath: "/data"
+      subPath: "configs/transmission-data"
+    - name: "media-ssd"
+      mountPath: "/downloads/transmission"
+      subPath: "downloads/transmission"
+    - name: "dev-tun"
+      mountPath: "/dev/net/tun"
+
+  securityContext:
+    capabilities:
+      add:
+        - NET_ADMIN
 
 # Ingress configuration
 ingress:
@@ -30,19 +247,18 @@ ingress:
   host: "" # Leave empty to use nip.io with the IP
   annotations: {}
 
-# Storage configuration
 storage:
   persistentVolume:
-    create: true
+    create: false
     name: "media-ssd"
     labels:
       type: "local"
     capacity: "1000Gi"
     accessMode: ReadWriteMany
     hostPath: "/mnt/ssd/media"
-  
+
   persistentVolumeClaim:
-    create: true
+    create: false
     name: "media-ssd"
     accessMode: ReadWriteMany
     capacity: "1000Gi"

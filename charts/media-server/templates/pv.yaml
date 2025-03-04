@@ -1,15 +1,24 @@
-{{- if .Values.storage.persistentVolume.create }}
+{{- if or .Values.storage.persistentVolume.create .Values.storage.persistentVolume.adopt }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: {{ .Values.storage.persistentVolume.name }}
   labels:
     type: {{ .Values.storage.persistentVolume.labels.type | default "local" }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
 spec:
+  {{- if .Values.storage.persistentVolume.create }}
   capacity:
     storage: {{ .Values.storage.persistentVolume.capacity }}
   accessModes:
     - {{ .Values.storage.persistentVolume.accessMode }}
   hostPath:
     path: {{ .Values.storage.persistentVolume.hostPath }}
+  {{- else }}
+  # When adopting an existing PV, we don't specify the spec to avoid overwriting
+  # existing configuration that might cause data loss
+  {{- end }}
 {{- end }}

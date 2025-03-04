@@ -1,5 +1,5 @@
 apiVersion: v2
-name: mediaserver
+name: media-server
 description: A Helm chart for media server applications
 type: application
 version: 0.1.0
@@ -8,27 +8,18 @@ dependencies:
   - name: bazarr
     version: "*"
     repository: https://k8s-at-home.com/charts/
-    condition: bazarr.enabled
   - name: emby
     version: "*"
-    repository: https://k8s-at-home.com/charts/
-    condition: emby.enabled
+    repository: https://bananaspliff.github.io/geek-charts/
   - name: prowlarr
     version: "*"
     repository: https://k8s-at-home.com/charts/
-    condition: prowlarr.enabled
   - name: radarr
     version: "*"
-    repository: https://k8s-at-home.com/charts/
-    condition: radarr.enabled
+    repository: https://bananaspliff.github.io/geek-charts/
   - name: sonarr
     version: "*"
-    repository: https://k8s-at-home.com/charts/
-    condition: sonarr.enabled
+    repository: https://bananaspliff.github.io/geek-charts/
   - name: transmission-openvpn
     version: "*"
-    repository: https://k8s-at-home.com/charts/
-    condition: transmission.enabled
-  - name: common
-    version: "*"
-    repository: https://k8s-at-home.com/charts/
+    repository: https://bananaspliff.github.io/geek-charts/
