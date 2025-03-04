@@ -13,48 +13,45 @@ spec:
     - host: {{ .Values.ingress.host | default (printf "media.%s.nip.io" .Values.ingress.ip) }}
       http:
         paths:
-          {{- if .Values.transmission.enabled }}
           - path: "/transmission"
             pathType: Prefix
             backend:
               service:
-                name: "transmission-transmission-openvpn"
+                name: "{{ .Release.Name }}-transmission-openvpn"
                 port:
                   number: 80
-          {{- end }}
-          {{- if .Values.sonarr.enabled }}
+          - path: "/bazarr"
+            pathType: Prefix
+            backend:
+              service:
+                name: "{{ .Release.Name }}-bazarr"
+                port:
+                  number: 80
           - path: "/sonarr"
             pathType: Prefix
             backend:
               service:
-                name: "sonarr"
+                name: "{{ .Release.Name }}-sonarr"
                 port:
                   number: 80
-          {{- end }}
-          {{- if .Values.radarr.enabled }}
           - path: "/radarr"
             pathType: Prefix
             backend:
               service:
-                name: "radarr"
+                name: "{{ .Release.Name }}-radarr"
                 port:
                   number: 80
-          {{- end }}
-          {{- if .Values.prowlarr.enabled }}
           - path: "/prowlarr"
             pathType: Prefix
             backend:
               service:
-                name: "prowlarr"
+                name: "{{ .Release.Name }}-prowlarr"
                 port:
                   number: 80
-          {{- end }}
-          {{- if .Values.emby.enabled }}
           - path: "/"
             pathType: Prefix
             backend:
               service:
-                name: "emby"
+                name: "{{ .Release.Name }}-emby"
                 port:
-                  number: 8096
-          {{- end }}
+                  number: 80

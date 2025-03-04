@@ -1,54 +1,64 @@
-# Mediaserver Helm Chart
+# Media Server Helm Chart
 
-This Helm chart deploys a complete media server stack including:
+This Helm chart deploys a complete media server stack including Bazarr, Emby, Prowlarr, Radarr, Sonarr, and Transmission.
 
-- Bazarr (using k8s-at-home chart)
-- Emby (using k8s-at-home chart)
-- Prowlarr (using k8s-at-home chart)
-- Radarr (using k8s-at-home chart)
-- Sonarr (using k8s-at-home chart)
-- Transmission (using k8s-at-home chart)
+## Handling Existing PV and PVC
 
-## Dependencies
+If you already have existing PersistentVolume and PersistentVolumeClaim resources that you want to use with this chart, you have two options:
 
-This chart relies on the following dependencies from k8s-at-home:
+### Option 1: Adopt Existing Resources (Recommended)
 
-- [k8s-at-home/bazarr](https://github.com/k8s-at-home/charts/tree/master/charts/stable/bazarr)
-- [k8s-at-home/emby](https://github.com/k8s-at-home/charts/tree/master/charts/stable/emby)
-- [k8s-at-home/prowlarr](https://github.com/k8s-at-home/charts/tree/master/charts/stable/prowlarr)
-- [k8s-at-home/radarr](https://github.com/k8s-at-home/charts/tree/master/charts/stable/radarr)
-- [k8s-at-home/sonarr](https://github.com/k8s-at-home/charts/tree/master/charts/stable/sonarr)
-- [k8s-at-home/transmission-openvpn](https://github.com/k8s-at-home/charts/tree/master/charts/stable/transmission-openvpn)
-- [k8s-at-home/common](https://github.com/k8s-at-home/library-charts/tree/main/charts/stable/common)
+This option adds Helm ownership labels to your existing resources so Helm can manage them:
 
-## Installation
+1. Set the following in your values.yaml:
+   ```yaml
+   storage:
+     persistentVolume:
+       create: false
+       adopt: true
+     persistentVolumeClaim:
+       create: false
+       adopt: true
+   ```
 
-```bash
-# Update dependencies
-helm dependency update
+2. Run the provided adoption script to add Helm labels to your existing resources:
+   ```bash
+   ./adopt-storage.sh
+   ```
 
-# Install the chart
-helm install mediaserver . -n media --create-namespace
-```
+3. Install or upgrade your Helm chart:
+   ```bash
+   helm upgrade --install media ./charts/media-server -n media
+   ```
+
+### Option 2: Use Existing Resources Without Helm Management
+
+If you prefer to keep your storage resources managed outside of Helm:
+
+1. Set the following in your values.yaml:
+   ```yaml
+   storage:
+     persistentVolume:
+       create: false
+       adopt: false
+     persistentVolumeClaim:
+       create: false
+       adopt: false
+   ```
+
+2. Install or upgrade your Helm chart:
+   ```bash
+   helm upgrade --install media ./charts/media-server -n media
+   ```
+
+3. Manually ensure your applications use the correct PVC by setting the appropriate values for each application.
 
 ## Configuration
 
-See the `values.yaml` file for configuration options. You can customize each application by overriding its values.
+See the values.yaml file for configuration options.
 
-### Storage
+## Dependencies
 
-The chart creates:
-- A StorageClass named `manual`
-- A PersistentVolume that points to `/mnt/ssd/media` on the host
-- A PersistentVolumeClaim that applications can use
-
-### Ingress
-
-An Ingress resource is created to expose the applications with the following paths:
-- `/transmission` - Transmission WebUI
-- `/sonarr` - Sonarr WebUI
-- `/radarr` - Radarr WebUI
-- `/prowlarr` - Prowlarr WebUI
-- `/` - Emby WebUI
-
-By default, the ingress uses nip.io with your configured IP address.
+This chart uses the following dependencies:
+- Bazarr, Emby, Prowlarr, Radarr, Sonarr: from k8s-at-home charts repository
+- Transmission-OpenVPN: from bananaspliff/geek-charts repository
