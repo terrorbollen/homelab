@@ -1,5 +1,7 @@
 # Kubernetes Homelab
 
+![image](docs/images/homelab.jpeg)
+
 A comprehensive Kubernetes homelab setup running on a Raspberry Pi cluster, delivering both public-facing applications and private home services.
 
 ## Overview
