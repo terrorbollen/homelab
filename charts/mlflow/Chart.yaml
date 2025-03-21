@@ -1,0 +1,13 @@
+apiVersion: v2
+name: mlflow
+description: A Helm chart for flowml 
+type: application
+version: 0.1.0
+appVersion: "1.16.0"
+dependencies:
+  - name: mlflow
+    version: "*"
+    repository: https://community-charts.github.io/helm-charts
+  - name: postgresql
+    version: "*"
+    repository: https://charts.bitnami.com/bitnami

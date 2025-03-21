@@ -1,0 +1,81 @@
+# Default values: https://artifacthub.io/packages/helm/community-charts/mlflow?modal=values
+
+postgresql:
+  enabled: true
+  fullnameOverride: mlflow-postgresql  # Ensure the service name matches `mlflow-postgresql`
+
+  auth:
+    enablePostgresUser: true
+    postgresPassword: "mlflowpassword"  # Admin password (optional if only using `mlflow` user)
+    username: "mlflow"  # Custom user
+    password: "mlflowpassword"  # Custom user password
+    database: "mlflow"  # Custom database
+
+  service:
+    type: ClusterIP
+    ports:
+      postgresql: 5432
+
+mlflow:
+  replicaCount: 1
+
+  imagePullSecrets:
+    - name: ghcr-secret
+  image:
+    repository: burakince/mlflow
+    pullPolicy: IfNotPresent
+    tag: latest
+
+  service:
+    type: ClusterIP
+    port: 5000
+    name: http
+    annotations: {}
+
+  backendStore:
+    postgres:
+      enabled: true
+      host: "mlflow-postgresql"
+      port: 5432
+      database: "mlflow"
+      user: "mlflow"
+      password: "mlflowpassword"
+
+  auth:
+    enabled: true
+    adminUsername: "admin"
+    adminPassword: "admin"
+    defaultPermission: READ
+    # -- Default registered authentication app name. If you want to use your custom authentication function, please look at: https://mlflow.org/docs/latest/auth/index.html#custom-authentication
+    appName: "basic-auth"
+    # -- Default authentication function
+    authorizationFunction: "mlflow.server.auth:authenticate_request_basic_auth"
+    # -- SQLite database file
+    sqliteFile: "basic_auth.db"
+    # -- SQLite database folder. Default is user home directory.
+    sqliteFullPath: ""
+    # -- Mlflow authentication INI configuration file path.
+    configPath: "/etc/mlflow/auth/"
+    # -- Mlflow authentication INI file
+    configFile: "basic_auth.ini"
+
+  ingress:
+    enabled: true
+    hosts:
+      - host: mlflow.friis-jespersen.dev 
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: friisjespersen-com-tls
+        hosts:
+          - friis-jespersen.dev
+
+  # podSecurityContext:
+  #   fsGroup: 1000
+
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsNonRoot: false
+    runAsUser: 1000
+
