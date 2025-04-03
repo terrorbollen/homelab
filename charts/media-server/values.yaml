@@ -31,6 +31,14 @@ bazarr:
       subPath:  "configs/bazarr"
       existingClaim: media-ssd
 
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "250Mi"
+    limits:
+      cpu: "100m"
+      memory: "350Mi"
+
     # library:
     #   enabled: true
     #   type: pvc
@@ -40,11 +48,8 @@ bazarr:
 
 emby:
   replicaCount: 1
-
   image:
     repository: linuxserver/emby
-
-
     pullPolicy: IfNotPresent
 
   env:
@@ -75,6 +80,15 @@ emby:
       mountPath: "/movies"
       subPath: "library/movies"
 
+  # resources:
+  #   requests:
+  #     cpu: "50m"
+  #     memory: "1.2Gi"
+  #   limits:
+  #     cpu: "200m"
+  #     memory: "1.8Gi"
+
+
 prowlarr:
   replicaCount: 1
 
@@ -104,6 +118,14 @@ prowlarr:
       existingClaim: media-ssd
       mountPath: /config
       subPath: configs/prowlarr
+
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "250Mi"
+    limits:
+      cpu: "100m"
+      memory: "350Mi"
 
 radarr:
   replicaCount: 1
@@ -138,6 +160,14 @@ radarr:
       mountPath: "/movies"
       subPath: "library/movies"
 
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "250Mi"
+    limits:
+      cpu: "100m"
+      memory: "350Mi"
+
 sonarr:
   replicaCount: 1
 
@@ -171,6 +201,14 @@ sonarr:
     - name: media-ssd
       mountPath: "/tv"
       subPath: "library/tv"
+
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "250Mi"
+    limits:
+      cpu: "100m"
+      memory: "350Mi"
 
 transmission-openvpn:
   replicaCount: 1
@@ -238,6 +276,14 @@ transmission-openvpn:
     capabilities:
       add:
         - NET_ADMIN
+
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "50Mi"
+    limits:
+      cpu: "100m"
+      memory: "100Mi"
 
 # Ingress configuration
 ingress:
