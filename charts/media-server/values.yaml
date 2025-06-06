@@ -31,20 +31,21 @@ bazarr:
       subPath:  "configs/bazarr"
       existingClaim: media-ssd
 
-  resources:
-    requests:
-      cpu: "10m"
-      memory: "250Mi"
-    limits:
-      cpu: "100m"
-      memory: "350Mi"
-
-    # library:
+    # media:
     #   enabled: true
     #   type: pvc
     #   mountPath: "/movies"
     #   subPath: "library/movies"
     #   existingClaim: media-ssd
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "250Mi"
+    limits:
+      cpu: "500m"
+      memory: "500Mi"
+
 
 emby:
   replicaCount: 1
@@ -80,12 +81,13 @@ emby:
       mountPath: "/movies"
       subPath: "library/movies"
 
+
   # resources:
   #   requests:
-  #     cpu: "50m"
+  #     cpu: "1000m"
   #     memory: "1.2Gi"
   #   limits:
-  #     cpu: "200m"
+  #     cpu: "2000m"
   #     memory: "1.8Gi"
 
 
@@ -121,10 +123,10 @@ prowlarr:
 
   resources:
     requests:
-      cpu: "50m"
+      cpu: "100m"
       memory: "250Mi"
     limits:
-      cpu: "100m"
+      cpu: "500m"
       memory: "350Mi"
 
 radarr:
@@ -162,10 +164,10 @@ radarr:
 
   resources:
     requests:
-      cpu: "50m"
+      cpu: "100m"
       memory: "250Mi"
     limits:
-      cpu: "100m"
+      cpu: "500m"
       memory: "350Mi"
 
 sonarr:
@@ -204,10 +206,10 @@ sonarr:
 
   resources:
     requests:
-      cpu: "50m"
+      cpu: "100m"
       memory: "250Mi"
     limits:
-      cpu: "100m"
+      cpu: "500m"
       memory: "350Mi"
 
 transmission-openvpn:
@@ -279,11 +281,11 @@ transmission-openvpn:
 
   resources:
     requests:
-      cpu: "50m"
-      memory: "50Mi"
-    limits:
       cpu: "100m"
-      memory: "100Mi"
+      memory: "250Mi"
+    limits:
+      cpu: "500m"
+      memory: "350Mi"
 
 # Ingress configuration
 ingress:

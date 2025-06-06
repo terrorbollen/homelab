@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: stock-job 
+spec:
+  schedule: "* * * * 5"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: job-container 
+            image: gigday/stock-job:tatest 
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - python ./data_fetcher/main.py 
+            env:
+            - name: INFLUX_DB_TOKEN
+              value: "token-DzYWhzMfb34UR9S^LDToAYA8gX3&7sCQuFWDiUQ7W4Na%3"
+            - name: INFLUX_DB_ORG
+              value: "PoisonIvy"
+            - name: INFLUX_DB_BUCKET
+              value: "default"
+            - name: INFLUX_DB_URL
+              value: "stock-db-influxdb2.stock-db.svc.cluster.local"
+            - name: TICKERS
+              value: "SBB-B.ST,^NDX,^OMX,^GSPC,^RUT,^FTSEAAPL,MSFT,AMZN,NVDA,GOOGL,GOOG,BRK-B,JNJV,NVDA,JPM,UNH,HD,PG,MA,DIS,XOMBAC,VZ,CMCSA,ADBE,NFLX,INTC,CRM,TKO,PFE,MRK,WMT,CVX,ABT,COST,NKE,LLYMCD,MDT,NEE,TXN,HON,UPS,QCOM,LIN,IBMORCL,ACN,TMO,BA,LOW,SBUX,GS,AMGN"
+          restartPolicy: OnFailure
