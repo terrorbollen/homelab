@@ -1,0 +1,13 @@
+apiVersion: tailscale.com/v1alpha1
+kind: Connector
+metadata:
+  name: cluster-subnet-router
+spec:
+  hostname: cluster-subnet-router
+  subnetRouter:
+    advertiseRoutes:
+      - "10.42.0.0/16"
+      - "10.43.0.0/16"
+      - "192.168.0.0/24"
+
+

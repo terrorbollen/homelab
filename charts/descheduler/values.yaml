@@ -3,4 +3,4 @@ deschedulerPolicy:
   cpuThreshold: 60
   memoryThreshold: 60
 
-schedule: "*/10 * * * *"
+schedule: "0 1 * * *"
