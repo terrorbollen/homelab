@@ -5,7 +5,7 @@ bazarr:
   replicaCount: 1
   image:
     repository: linuxserver/bazarr
-    tag: arm64v8-latest 
+    tag: latest 
     pullPolicy: IfNotPresent
 
   env:
@@ -82,21 +82,12 @@ emby:
       subPath: "library/movies"
 
 
-  # resources:
-  #   requests:
-  #     cpu: "1000m"
-  #     memory: "1.2Gi"
-  #   limits:
-  #     cpu: "2000m"
-  #     memory: "1.8Gi"
-
-
 prowlarr:
   replicaCount: 1
 
   image:
     repository: linuxserver/prowlarr
-    tag: arm64v8-latest 
+    tag: latest 
     pullPolicy: IfNotPresent
 
   env:
@@ -175,7 +166,7 @@ sonarr:
 
   image:
     repository: linuxserver/sonarr
-    tag: latest # ARM image
+    tag: latest
     pullPolicy: IfNotPresent
 
   env:
@@ -222,23 +213,19 @@ transmission-openvpn:
 
   env:
     - name: OPENVPN_PROVIDER
-      value: "NORDVPN"
+      value: "MULLVAD"
     - name: OPENVPN_USERNAME
       valueFrom:
         secretKeyRef:
-          name: "openvpn"
+          name: "mullvad"
           key: "username"
     - name: OPENVPN_PASSWORD
       valueFrom:
         secretKeyRef:
-          name: "openvpn"
+          name: "mullvad"
           key: "password"
-    - name: NORDVPN_PROTOCOL
-      value: "TCP"
-    - name: NORDVPN_COUNTRY
-      value: "SE" # Country where we want to download over VPN
-    - name: NORDVPN_CATEGORY
-      value: "P2P" # VPN Type
+    - name: OPENVPN_CONFIG
+      value: se_all
     - name: LOCAL_NETWORK
       value: "192.168.0.0/24"
     - name: TRANSMISSION_PEER_PORT
@@ -291,7 +278,7 @@ transmission-openvpn:
 ingress:
   enabled: true
   class: traefik
-  ip: "192.168.0.20"
+  ip: "192.168.0.36"
   host: "" # Leave empty to use nip.io with the IP
   annotations: {}
 
@@ -301,7 +288,7 @@ storage:
     name: "media-ssd"
     labels:
       type: "local"
-    capacity: "1000Gi"
+    capacity: "2Ti"
     accessMode: ReadWriteMany
     hostPath: "/mnt/ssd/media"
 
@@ -309,4 +296,4 @@ storage:
     create: false
     name: "media-ssd"
     accessMode: ReadWriteMany
-    capacity: "1000Gi"
+    capacity: "2Ti"
