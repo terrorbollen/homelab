@@ -4,12 +4,13 @@ kind: PersistentVolume
 metadata:
   name: {{ .Values.storage.persistentVolume.name }}
   labels:
-    type: {{ .Values.storage.persistentVolume.labels.type | default "local" }}
+    type: {{ .Values.storage.persistentVolume.labels.type | default "local-path" }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   annotations:
     meta.helm.sh/release-name: {{ .Release.Name }}
     meta.helm.sh/release-namespace: {{ .Release.Namespace }}
 spec:
+  storageClassName: "local-storage"
   {{- if .Values.storage.persistentVolume.create }}
   capacity:
     storage: {{ .Values.storage.persistentVolume.capacity }}
