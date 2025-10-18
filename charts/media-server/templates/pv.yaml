@@ -11,6 +11,7 @@ metadata:
     meta.helm.sh/release-namespace: {{ .Release.Namespace }}
 spec:
   storageClassName: "local-storage"
+  persistentVolumeReclaimPolicy: Retain
   {{- if .Values.storage.persistentVolume.create }}
   capacity:
     storage: {{ .Values.storage.persistentVolume.capacity }}
