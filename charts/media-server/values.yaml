@@ -1,50 +1,90 @@
 # Default values for mediaserver chart
 # This is a YAML-formatted file.
+#
 
 bazarr:
-  replicaCount: 1
   image:
-    repository: linuxserver/bazarr
-    tag: latest 
+    repository: ghcr.io/home-operations/bazarr
     pullPolicy: IfNotPresent
-
-  env:
-    - name: TZ
-      value: UTC
-    - name: PUID
-      value: "1000"
-    - name: PGID
-      value: "1000"
 
   service:
     main:
       ports:
-        http:
-          port: 80
+        main:
+          port: 6767
+          protocol: http
           targetPort: 6767
 
   persistence:
-    configs:
+    config:
       enabled: true
       type: pvc
-      mountPath: "/config"
-      subPath:  "configs/bazarr"
+      retain: true
+      size: 1Gi
+
+    media:
+      enabled: true
+      type: pvc
+      volumeName: media-ssd
       existingClaim: media-ssd
+      mountPath: "/movies"
+      subPath: "library/movies"
+
 
     # media:
     #   enabled: true
     #   type: pvc
-    #   mountPath: "/movies"
-    #   subPath: "library/movies"
     #   existingClaim: media-ssd
+    #   targetSelector:
+    #     main:
+    #       main:
+    #         mountPath: "/movies"
 
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "250Mi"
-    limits:
-      cpu: "500m"
-      memory: "500Mi"
+
+# bazarr:
+#   replicaCount: 1
+#   image:
+#     repository: linuxserver/bazarr
+#     tag: latest 
+#     pullPolicy: IfNotPresent
+#
+#   env:
+#     - name: TZ
+#       value: UTC
+#     - name: PUID
+#       value: "1000"
+#     - name: PGID
+#       value: "1000"
+#
+#   service:
+#     main:
+#       ports:
+#         http:
+#           port: 80
+#           targetPort: 6767
+#
+#   persistence:
+#     configs:
+#       enabled: true
+#       type: pvc
+#       mountPath: "/config"
+#       subPath:  "configs/bazarr"
+#       existingClaim: media-ssd
+#
+#     media:
+#       enabled: true
+#       type: pvc
+#       mountPath: "/movies"
+#       subPath: "library/movies"
+#       existingClaim: media-ssd
+
+  # resources:
+  #   requests:
+  #     cpu: "100m"
+  #     memory: "250Mi"
+  #   limits:
+  #     cpu: "500m"
+  #     memory: "500Mi"
 
 
 emby:
@@ -284,7 +324,7 @@ ingress:
 
 storage:
   persistentVolume:
-    create: false
+    create: true
     name: "media-ssd"
     labels:
       type: "local"
@@ -293,7 +333,7 @@ storage:
     hostPath: "/mnt/ssd/media"
 
   persistentVolumeClaim:
-    create: false
+    create: true
     name: "media-ssd"
     accessMode: ReadWriteMany
     capacity: "2Ti"
