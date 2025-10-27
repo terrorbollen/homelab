@@ -1,0 +1,33 @@
+grafana:
+  adminUser: admin
+  adminPassword: strongpassword
+  persistence:
+    type: pvc
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+    annotations: 
+      helm.sh/resource-policy: keep
+    finalizers:
+      - kubernetes.io/pvc-protection
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingressClassName: traefik
+      kubernetes.io/tls-acme: "true"
+    path: /
+    pathType: Prefix
+    hosts:
+      - "grafana.friis-jespersen.dev"
+    tls:
+      - hosts:
+          - friis-jespersen.dev
+        secretName: friisjespersen-com-tls
