@@ -1,11 +1,9 @@
 # Default values for mediaserver chart
 # This is a YAML-formatted file.
-#
 
 bazarr:
   image:
     repository: ghcr.io/home-operations/bazarr
-    # tag: latest 
     pullPolicy: IfNotPresent
 
   service:
@@ -27,24 +25,6 @@ bazarr:
         # - 568
         - 1000
 
-  # workload:
-  #   main:
-  #     podSpec:
-  #       securityContext:
-  #         # container:
-  #         PUID: 1000 
-  #         fsGroup: 1000
-  #         runAsUser: 1000
-  #         runAsGroup: 1000
-        # containers:
-        #   main:
-        #     env:
-        #       # TZ: UTC
-        #       PUID: "1000"
-        #       PGID: "1000"
-        #       UID: "1000"
-        #       GID: "1000"
-
   persistence:
     config:
       enabled: true
@@ -60,61 +40,15 @@ bazarr:
       mountPath: "/movies"
       subPath: "library/movies"
 
-
-    # media:
-    #   enabled: true
-    #   type: pvc
-    #   existingClaim: media-ssd
-    #   targetSelector:
-    #     main:
-    #       main:
-    #         mountPath: "/movies"
+    tv:
+      enabled: true
+      type: pvc
+      volumeName: media-ssd
+      existingClaim: media-ssd
+      mountPath: "/tv"
+      subPath: "library/tv"
 
 
-# bazarr:
-#   replicaCount: 1
-#   image:
-#     repository: linuxserver/bazarr
-#     tag: latest 
-#     pullPolicy: IfNotPresent
-#
-#   env:
-#     - name: TZ
-#       value: UTC
-#     - name: PUID
-#       value: "1000"
-#     - name: PGID
-#       value: "1000"
-#
-#   service:
-#     main:
-#       ports:
-#         http:
-#           port: 80
-#           targetPort: 6767
-#
-#   persistence:
-#     configs:
-#       enabled: true
-#       type: pvc
-#       mountPath: "/config"
-#       subPath:  "configs/bazarr"
-#       existingClaim: media-ssd
-#
-#     media:
-#       enabled: true
-#       type: pvc
-#       mountPath: "/movies"
-#       subPath: "library/movies"
-#       existingClaim: media-ssd
-
-  # resources:
-  #   requests:
-  #     cpu: "100m"
-  #     memory: "250Mi"
-  #   limits:
-  #     cpu: "500m"
-  #     memory: "500Mi"
 
 
 emby:
