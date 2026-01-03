@@ -15,7 +15,7 @@ grafana:
   service:
     enabled: true
     type: ClusterIP
-    port: 80
+    port: 81
     targetPort: 3000
 
   ingress:
@@ -26,8 +26,8 @@ grafana:
     path: /
     pathType: Prefix
     hosts:
-      - "grafana.friis-jespersen.dev"
-    tls:
-      - hosts:
-          - friis-jespersen.dev
-        secretName: friisjespersen-com-tls
+      - "grafana.192.168.0.36.nip.io"
+    # tls:
+    #   - hosts:
+    #       - friis-jespersen.dev
+    #     secretName: friisjespersen-com-tls
