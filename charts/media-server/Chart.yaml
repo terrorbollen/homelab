@@ -29,3 +29,6 @@ dependencies:
   - name: bazarr
     version: "*"
     repository: oci://oci.trueforge.org/truecharts
+  - name: jellyfin 
+    version: "*"
+    repository: oci://oci.trueforge.org/truecharts
