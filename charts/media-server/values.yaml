@@ -2,10 +2,6 @@
 # This is a YAML-formatted file.
 
 bazarr:
-  image:
-    repository: ghcr.io/home-operations/bazarr
-    pullPolicy: IfNotPresent
-
   service:
     main:
       ports:
@@ -37,18 +33,8 @@ bazarr:
       type: pvc
       volumeName: media-ssd
       existingClaim: media-ssd
-      mountPath: "/movies"
-      subPath: "library/movies"
-
-    tv:
-      enabled: true
-      type: pvc
-      volumeName: media-ssd
-      existingClaim: media-ssd
-      mountPath: "/tv"
-      subPath: "library/tv"
-
-
+      mountPath: "/media"
+      subPath: "library"
 
 
 emby:
