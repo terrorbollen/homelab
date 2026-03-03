@@ -1,0 +1,41 @@
+infisical-standalone:
+  infisical:
+    enabled: true
+    name: infisical
+    databaseSchemaMigrationJob:
+      image:
+        repository: ghcr.io/groundnuty/k8s-wait-for
+        tag: no-root-v2.0
+        pullPolicy: IfNotPresent
+
+    serviceAccount:
+      create: true
+      annotations: {}
+      name: null
+
+    replicaCount: 2
+
+    image:
+      repository: infisical/infisical
+      tag: "v0.151.0"
+      pullPolicy: IfNotPresent
+      imagePullSecrets: []
+
+    service:
+      annotations: {}
+      type: ClusterIP
+      nodePort: ""
+
+    resources:
+      limits:
+      requests:
+        cpu: 350m
+
+  ingress:
+    enabled: true
+    hostName: "infisical.192.168.0.36.nip.io"
+    ingressClassName: traefik
+    nginx:
+      enabled: false
+
+
