@@ -142,9 +142,6 @@ prowlarr:
     requests:
       cpu: "100m"
       memory: "250Mi"
-    limits:
-      cpu: "500m"
-      memory: "350Mi"
 
 radarr:
   replicaCount: 1
@@ -173,8 +170,8 @@ radarr:
       mountPath: "/config"
       subPath: "configs/radarr"
     - name: "media-ssd"
-      mountPath: "/downloads/transmission"
-      subPath: "downloads/transmission"
+      mountPath: "/data"
+      subPath: "downloads/transmission/data"
     - name: media-ssd
       mountPath: "/movies"
       subPath: "library/movies"
@@ -184,8 +181,6 @@ radarr:
       cpu: "100m"
       memory: "250Mi"
     limits:
-      cpu: "500m"
-      memory: "350Mi"
 
 sonarr:
   replicaCount: 1
@@ -215,8 +210,8 @@ sonarr:
       mountPath: "/config"
       subPath: "configs/sonarr"
     - name: media-ssd
-      mountPath: "/downloads/transmission"
-      subPath: "downloads/transmission"
+      mountPath: "/data"
+      subPath: "downloads/transmission/data"
     - name: media-ssd
       mountPath: "/tv"
       subPath: "library/tv"
@@ -226,79 +221,6 @@ sonarr:
       cpu: "100m"
       memory: "250Mi"
     limits:
-      cpu: "500m"
-      memory: "350Mi"
-
-transmission-openvpn:
-  replicaCount: 1
-
-  image:
-    repository: "haugene/transmission-openvpn"
-    tag: "latest"
-    pullPolicy: "IfNotPresent"
-
-  env:
-    - name: OPENVPN_PROVIDER
-      value: "MULLVAD"
-    - name: OPENVPN_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: "mullvad"
-          key: "username"
-    - name: OPENVPN_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: "mullvad"
-          key: "password"
-    - name: OPENVPN_CONFIG
-      value: se_all
-    - name: LOCAL_NETWORK
-      value: "192.168.0.0/24"
-    - name: TRANSMISSION_PEER_PORT
-      value: "47444"
-    - name: TRANSMISSION_DOWNLOAD_DIR
-      value: "/downloads/transmission"
-    - name: PUID
-      value: "1000"
-    - name: PGID
-      value: "1000"
-    - name: CREATE_TUN_DEVICE
-      value: "false"
-
-  service:
-    type: ClusterIP
-    port: 80
-
-  volumes:
-    - name: "media-ssd"
-      persistentVolumeClaim:
-        claimName: "media-ssd"
-    - name: "dev-tun"
-      hostPath:
-        path: "/dev/net/tun"
-
-  volumeMounts:
-    - name: "media-ssd"
-      mountPath: "/data"
-      subPath: "configs/transmission-data"
-    - name: "media-ssd"
-      mountPath: "/downloads/transmission"
-      subPath: "downloads/transmission"
-    - name: "dev-tun"
-      mountPath: "/dev/net/tun"
-
-  securityContext:
-    capabilities:
-      add:
-        - NET_ADMIN
-
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "250Mi"
-    limits:
-      cpu: "500m"
-      memory: "350Mi"
 
 # Ingress configuration
 ingress:
@@ -323,3 +245,4 @@ storage:
     name: "media-ssd"
     accessMode: ReadWriteMany
     capacity: "2Ti"
+

@@ -1,4 +1,12 @@
 grafana:
+  image:
+    registry: docker.io
+    repository: grafana/grafana
+    # Overrides the Grafana image tag whose default is the chart appVersion
+    tag: "latest"
+    sha: ""
+    pullPolicy: IfNotPresent
+
   adminUser: admin
   adminPassword: strongpassword
   persistence:
@@ -27,7 +35,3 @@ grafana:
     pathType: Prefix
     hosts:
       - "grafana.192.168.0.36.nip.io"
-    # tls:
-    #   - hosts:
-    #       - friis-jespersen.dev
-    #     secretName: friisjespersen-com-tls

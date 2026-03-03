@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmission
+  labels:
+    app: transmission
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transmission
+  template:
+    metadata:
+      labels:
+        app: transmission
+    spec:
+      containers:
+        - name: transmission
+          image: haugene/transmission-wireguard:main
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - NET_ADMIN
+          ports:
+            - containerPort: 9091
+              protocol: TCP
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: CONFIG_FILE
+              value: "/wg-config/my_wg.conf"
+          volumeMounts:
+            - name: media-ssd
+              mountPath: /data
+              subPath: downloads/transmission/data
+            - name: media-ssd
+              mountPath: "/config"
+              subPath: configs/transmission
+            - name: wireguard
+              mountPath: /wg-config
+              readOnly: true
+      volumes:
+        - name: media-ssd
+          persistentVolumeClaim:
+            claimName: media-ssd
+        - name: wireguard
+          secret:
+            secretName: wg-main-wireguard

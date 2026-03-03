@@ -11,17 +11,14 @@ dependencies:
 - name: sonarr
   repository: https://bananaspliff.github.io/geek-charts/
   version: 0.1.0
-- name: transmission-openvpn
-  repository: https://bananaspliff.github.io/geek-charts/
-  version: 0.1.0
 - name: jellyseerr-chart
   repository: oci://ghcr.io/fallenbagel/jellyseerr
   version: 2.7.0
 - name: bazarr
   repository: oci://oci.trueforge.org/truecharts
-  version: 23.2.6
+  version: 23.6.0
 - name: jellyfin
   repository: oci://oci.trueforge.org/truecharts
-  version: 22.2.12
-digest: sha256:92b4ea769e38d4a8209760633e0f48f3794dfc4add815dad5f2a9c6be4ef8fac
-generated: "2026-01-03T16:55:20.768416+02:00"
+  version: 22.6.1
+digest: sha256:49202aaf4cee8172262e5e32ad88d7a9296ee2ec51bf40de33d2522d1bc2696b
+generated: "2026-03-03T11:47:15.730776+01:00"
