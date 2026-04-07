@@ -22,10 +22,10 @@ telegraf-ds:
     # In test clusters where hostnames are resolved in /etc/hosts on each node,
     # the HOSTNAME is not resolvable from inside containers
     # So inject the host IP as well
-    - name: HOSTIP
-      valueFrom:
-        fieldRef:
-          fieldPath: status.hostIP
+    # - name: HOSTIP
+    #   valueFrom:
+    #     fieldRef:
+    #       fieldPath: status.hostIP
     # Mount the host filesystem and set the appropriate env variables.
     # ref: https://github.com/influxdata/telegraf/blob/master/docs/FAQ.md
     # HOST_PROC is required by the cpu, disk, diskio, kernel and processes input plugins
@@ -71,6 +71,7 @@ telegraf-ds:
         data_type = "integer"
       [agent]
         interval = "10s"
+        hostname = "$HOSTNAME"
       [[outputs.influxdb_v2]]
       urls           = ["http://influxdb-influxdb2.telegraf.svc"]
         bucket         = "data"
