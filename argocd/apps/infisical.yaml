@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infisical
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/terrorbollen/homelab
+    targetRevision: HEAD
+    path: charts/infiscal
+    helm:
+      releaseName: infisical
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: infisical
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
