@@ -28,7 +28,7 @@ operatorConfig:
 
   image:
     repository: tailscale/k8s-operator
-    tag: ""
+    tag: "latest"
     digest: ""
     pullPolicy: Always
   logging: "info" # info, debug, dev
@@ -41,7 +41,7 @@ operatorConfig:
 proxyConfig:
   image:
     repository: tailscale/tailscale
-    tag: ""
+    tag: "latest"
     digest: ""
   defaultTags: "tag:k8s"
   firewallMode: auto
