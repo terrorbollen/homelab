@@ -20,7 +20,7 @@ couchdb:
     enabled: true
     image:
       repository: curlimages/curl
-      tag: latest
+      tag: "8.21.0"
       pullPolicy: Always
     defaultDatabases:
       - obsidiannotes

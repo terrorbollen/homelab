@@ -77,6 +77,7 @@ emby:
   replicaCount: 1
   image:
     repository: linuxserver/emby
+    tag: "4.8.11.0"
     pullPolicy: IfNotPresent
 
   env:
@@ -113,7 +114,7 @@ prowlarr:
 
   image:
     repository: linuxserver/prowlarr
-    tag: latest 
+    tag: "2.0.5.5160-ls125"
     pullPolicy: IfNotPresent
 
   env:
@@ -148,6 +149,7 @@ radarr:
 
   image:
     repository: linuxserver/radarr
+    tag: "5.26.2.10099-ls281"
     pullPolicy: IfNotPresent
 
   env:
@@ -202,7 +204,7 @@ sonarr:
 
   image:
     repository: linuxserver/sonarr
-    tag: latest
+    tag: "4.0.15.2941-ls290"
     pullPolicy: IfNotPresent
 
   env:
