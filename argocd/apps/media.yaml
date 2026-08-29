@@ -17,3 +17,18 @@ spec:
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+  ignoreDifferences:
+    # TrueCharts' common library computes a checksum/cnpg annotation on every
+    # workload regardless of whether it actually uses a CNPG-managed database.
+    # No CNPG operator is installed in this cluster and none of these apps
+    # reference one -- this field is inert boilerplate, but different chart
+    # versions compute its placeholder value differently, causing permanent
+    # drift that a sync never actually resolves.
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1cnpg
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1cnpg
