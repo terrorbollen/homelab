@@ -24,5 +24,5 @@ dependencies:
     version: "24.8.1"
     repository: oci://oci.trueforge.org/truecharts
   - name: jellyfin
-    version: "23.7.4"
+    version: "23.8.0"
     repository: oci://oci.trueforge.org/truecharts
