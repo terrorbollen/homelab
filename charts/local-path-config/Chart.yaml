@@ -1,0 +1,6 @@
+apiVersion: v2
+name: local-path-config
+description: Overrides for k3s's built-in local-path StorageClass (enables volume expansion)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
