@@ -36,6 +36,11 @@ telegraf-ds:
       value: "/hostfs/sys"
     - name: "HOST_MOUNT_PREFIX"
       value: "/hostfs"
+    - name: INFLUX_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: influxdb2-admin
+          key: admin-token
   ## Add custom volumes and mounts
   # volumes:
   # - name: telegraf-output-influxdb2
@@ -76,7 +81,7 @@ telegraf-ds:
       urls           = ["http://influxdb-influxdb2.telegraf.svc"]
         bucket         = "data"
         organization   = "OurCompany"
-        token          = "***REMOVED_INFLUX_TOKEN***"
+        token          = "$INFLUX_TOKEN"
     monitor_self: false
     docker_endpoint: "unix:///var/run/docker.sock"
 
@@ -91,9 +96,8 @@ influxdb2:
     organization: "influxdata"
     bucket: "default"
     user: "admin"
-    password: "***REMOVED_PASSWORD***"
     retention_policy: "0s"
-    token: "***REMOVED_INFLUX_TOKEN***"
+    existingSecret: influxdb2-admin
 
   # persistence:
   #   enabled: true
