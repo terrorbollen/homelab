@@ -1,0 +1,7 @@
+# Terraform local state - contains resolved secrets (API keys) in plaintext
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+
+# Provider binaries - reinstalled via `terraform init`, keep .terraform.lock.hcl tracked
+.terraform/
