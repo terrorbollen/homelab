@@ -11,14 +11,14 @@ dependencies:
 - name: sonarr
   repository: https://bananaspliff.github.io/geek-charts/
   version: 0.1.0
-- name: jellyseerr-chart
-  repository: oci://ghcr.io/fallenbagel/jellyseerr
-  version: 2.7.0
+- name: seerr-chart
+  repository: oci://ghcr.io/seerr-team/seerr
+  version: 3.9.1
 - name: bazarr
   repository: oci://oci.trueforge.org/truecharts
-  version: 23.6.0
+  version: 24.8.1
 - name: jellyfin
   repository: oci://oci.trueforge.org/truecharts
-  version: 22.6.1
-digest: sha256:49202aaf4cee8172262e5e32ad88d7a9296ee2ec51bf40de33d2522d1bc2696b
-generated: "2026-03-03T11:47:15.730776+01:00"
+  version: 23.7.4
+digest: sha256:b7b933fd7b2311824a85a5a9b15c4b36104873bdf95d17917d423d0fa1b686e7
+generated: "2026-08-29T18:56:51.065649+02:00"
