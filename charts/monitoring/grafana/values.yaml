@@ -30,6 +30,11 @@ grafana:
       searchNamespace: ALL
       provider:
         foldersFromFilesStructure: true
+    datasources:
+      enabled: true
+      label: grafana_datasource
+      labelValue: "1"
+      searchNamespace: ALL
 
   service:
     enabled: true
