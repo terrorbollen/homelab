@@ -169,12 +169,27 @@ radarr:
     - name: "media-ssd"
       mountPath: "/config"
       subPath: "configs/radarr"
+    # Whole-PVC mount (no subPath) so /storage/downloads/... and
+    # /storage/library/... share a single bind mount inside this
+    # container -- required for "Use Hardlinks instead of Copy" to
+    # actually hardlink instead of silently falling back to a full
+    # copy. Kubernetes subPath mounts of the same PVC are treated as
+    # separate filesystems for hardlink purposes (EXDEV), even though
+    # `stat` reports matching device numbers -- confirmed via a direct
+    # `ln` test between the old /data and /movies mounts.
+    #
+    # After deploying this change, in Radarr's UI:
+    #   - Settings > Media Management > Root Folder: change
+    #     /movies -> /storage/library/movies (existing movies are
+    #     untouched on disk; this just re-points Radarr at them)
+    #   - Settings > Download Clients > Remote Path Mappings: add
+    #     Host=transmission, Remote Path=/data/,
+    #     Local Path=/storage/downloads/transmission/data/
+    #     (Transmission's own mount is unchanged, so it still reports
+    #     download paths as /data/..., but Radarr now sees the same
+    #     files at /storage/downloads/transmission/data/...)
     - name: "media-ssd"
-      mountPath: "/data"
-      subPath: "downloads/transmission/data"
-    - name: media-ssd
-      mountPath: "/movies"
-      subPath: "library/movies"
+      mountPath: "/storage"
 
   resources:
     requests:
@@ -209,18 +224,34 @@ sonarr:
     - name: media-ssd
       mountPath: "/config"
       subPath: "configs/sonarr"
+    # Whole-PVC mount (no subPath) -- see the matching comment in the
+    # radarr section above for why. After deploying, in Sonarr's UI:
+    #   - Settings > Media Management > Root Folder: change
+    #     /tv -> /storage/library/tv
+    #   - Settings > Download Clients > Remote Path Mappings: add
+    #     Host=transmission, Remote Path=/data/,
+    #     Local Path=/storage/downloads/transmission/data/
     - name: media-ssd
-      mountPath: "/data"
-      subPath: "downloads/transmission/data"
-    - name: media-ssd
-      mountPath: "/tv"
-      subPath: "library/tv"
+      mountPath: "/storage"
 
   resources:
     requests:
       cpu: "100m"
       memory: "250Mi"
     limits:
+
+seerr-chart:
+  service:
+    type: ClusterIP
+    port: 80
+    annotations: {}
+
+  config:
+    persistence:
+      size: 5Gi
+      accessModes:
+        - ReadWriteOnce
+      name: 'seerr-config'
 
 # Ingress configuration
 ingress:

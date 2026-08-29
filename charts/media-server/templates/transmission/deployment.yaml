@@ -4,8 +4,6 @@ metadata:
   name: transmission
   labels:
     app: transmission
-  annotations:
-    secrets.infisical.com/auto-reload: "true"
 spec:
   replicas: 1
   selector:
@@ -51,4 +49,4 @@ spec:
             claimName: media-ssd
         - name: wireguard
           secret:
-            secretName: wg-infisical-secret
+            secretName: wg-secret
