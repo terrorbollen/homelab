@@ -7,8 +7,10 @@ grafana:
     sha: ""
     pullPolicy: IfNotPresent
 
-  adminUser: admin
-  adminPassword: strongpassword
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
   persistence:
     type: pvc
     enabled: true
