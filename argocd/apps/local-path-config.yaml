@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: local-path-config
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/terrorbollen/homelab
+    targetRevision: HEAD
+    path: charts/local-path-config
+    helm:
+      releaseName: local-path-config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
