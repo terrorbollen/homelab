@@ -77,7 +77,7 @@ emby:
   replicaCount: 1
   image:
     repository: linuxserver/emby
-    tag: "4.8.11.0"
+    tag: "4.8.11.0-ls254"
     pullPolicy: IfNotPresent
 
   env:
