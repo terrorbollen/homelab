@@ -93,7 +93,7 @@ couchdb:
   ## The CouchDB image
   image:
     repository: couchdb
-    tag: 3.5.1
+    tag: 3.5.2
     pullPolicy: IfNotPresent
 
   ## Experimental integration with Lucene-powered fulltext search
