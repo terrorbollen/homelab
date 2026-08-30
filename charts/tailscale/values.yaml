@@ -24,7 +24,7 @@ tailscale-operator:
 
     image:
       repository: tailscale/k8s-operator
-      tag: "v1.98.9"
+      tag: "v1.102.3"
       digest: ""
       pullPolicy: Always
     logging: "info" # info, debug, dev
