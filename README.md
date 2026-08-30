@@ -2,13 +2,13 @@
 
 ![image](docs/images/homelab.jpeg)
 
-A Kubernetes homelab delivering both public-facing applications and private home services, deployed via GitOps with ArgoCD.
+A Kubernetes homelab for public-facing apps and private home services, deployed via GitOps with ArgoCD.
 
 ## Overview
 
-This repository contains Helm charts and ArgoCD Application manifests for the homelab, deployed and managed using ArgoCD.
+This repo holds the Helm charts and ArgoCD Application manifests for everything running in the cluster.
 
-The setup includes:
+The setup covers:
 
 1. **Media Server Stack** - Automated downloading, organizing, and streaming of movies/TV
 2. **Monitoring & Observability** - Metrics, logs, and dashboards for the cluster
@@ -56,9 +56,6 @@ The cluster runs k3s, with services organized into dedicated namespaces and mana
 - **Obsidian LiveSync** - CouchDB-backed sync server for Obsidian notes
 - **Portfolio Website** - Personal website hosted at friis-jespersen.dev
 
-## GitOps
-
-Services are deployed and kept in sync using ArgoCD. Cert-Manager, Traefik, Cloudflare Tunnel, Ollama, and Descheduler currently exist as charts/config in this repo without a matching ArgoCD Application wired up.
 
 ## Acknowledgments
 
