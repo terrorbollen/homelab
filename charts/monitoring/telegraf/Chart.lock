@@ -2,8 +2,5 @@ dependencies:
 - name: telegraf-ds
   repository: https://helm.influxdata.com
   version: 1.1.42
-- name: influxdb2
-  repository: https://helm.influxdata.com
-  version: 2.1.2
-digest: sha256:993e15263d8d61d5951ef72e4268b825aabaf6a8b9e692d44c682830729ab408
-generated: "2025-10-18T12:47:37.890237+02:00"
+digest: sha256:c3c4e62d894e9e6f39a865e72d399a313001b12af28f1514a20a3f717f2970c1
+generated: "2026-08-30T01:02:00.746068+02:00"
