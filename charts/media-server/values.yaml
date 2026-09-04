@@ -226,13 +226,6 @@ sonarr:
     - name: media-ssd
       mountPath: "/config"
       subPath: "configs/sonarr"
-    # Whole-PVC mount (no subPath) -- see the matching comment in the
-    # radarr section above for why. After deploying, in Sonarr's UI:
-    #   - Settings > Media Management > Root Folder: change
-    #     /tv -> /storage/library/tv
-    #   - Settings > Download Clients > Remote Path Mappings: add
-    #     Host=transmission, Remote Path=/data/,
-    #     Local Path=/storage/downloads/transmission/data/
     - name: media-ssd
       mountPath: "/storage"
 
