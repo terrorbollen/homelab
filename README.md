@@ -14,8 +14,8 @@ The setup covers:
 2. **Monitoring & Observability** - Metrics, logs, and dashboards for the cluster
 3. **Secrets Management** - Encrypted secrets in git plus a dedicated secrets manager
 4. **Networking & Access** - Ingress, TLS, VPN, and tunneled external access
-5. **Personal Website** - A portfolio site hosted at friis-jespersen.dev
-6. **Other Services** - Self-hosted LLM inference and notes sync
+5. **Personal Website** - A portfolio site
+6. **Other Services** - Self-hosted LLM inference, notes sync, and photo backup
 
 ## Architecture
 
@@ -54,7 +54,8 @@ The cluster runs k3s, with services organized into dedicated namespaces and mana
 #### Other Services
 - **Ollama** - Self-hosted LLM inference
 - **Obsidian LiveSync** - CouchDB-backed sync server for Obsidian notes
-- **Portfolio Website** - Personal website hosted at friis-jespersen.dev
+- **Immich** - Self-hosted photo and video backup, with machine learning-based search
+- **Portfolio Website** - Personal website
 
 
 ## Acknowledgments
