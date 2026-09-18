@@ -19,6 +19,6 @@ dependencies:
   version: 24.11.0
 - name: jellyfin
   repository: oci://oci.trueforge.org/truecharts
-  version: 23.9.2
-digest: sha256:9e28d2494fd7e3c1f4cd7b94d2afc162710e82f67a84e366c74ae8f5afb3492b
-generated: "2026-09-17T21:07:23.348144+02:00"
+  version: 24.1.2
+digest: sha256:ccf19b340b5cc6ac286bfb92750ff508cfa17efa753c077803fac9dbaced961b
+generated: "2026-09-18T12:29:40.443267914Z"
