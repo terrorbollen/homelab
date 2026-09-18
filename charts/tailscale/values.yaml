@@ -37,7 +37,7 @@ tailscale-operator:
   proxyConfig:
     image:
       repository: tailscale/tailscale
-      tag: "v1.102.3"
+      tag: "v1.102.4"
       digest: ""
     defaultTags: "tag:k8s"
     firewallMode: auto
