@@ -17,7 +17,7 @@ infisical-standalone:
 
     image:
       repository: infisical/infisical
-      tag: "v0.165.10"
+      tag: "v0.165.16"
       pullPolicy: IfNotPresent
       imagePullSecrets: []
 
