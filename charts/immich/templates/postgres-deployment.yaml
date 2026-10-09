@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-postgres
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: immich-postgres
+  template:
+    metadata:
+      labels:
+        app: immich-postgres
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: beelink
+      containers:
+        - name: postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          env:
+            - name: POSTGRES_USER
+              value: immich
+            - name: POSTGRES_DB
+              value: immich
+            - name: POSTGRES_INITDB_ARGS
+              value: "--data-checksums"
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: immich-postgres
+                  key: password
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: immich-postgres-data
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 128Mi

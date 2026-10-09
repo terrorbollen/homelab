@@ -1,0 +1,65 @@
+# Pin everything to the beelink node: it's the only node with enough spare
+# CPU/RAM for the machine-learning workload, and local-path storage is
+# node-bound anyway, so server/ml/valkey/postgres all need to land together.
+immich:
+  controllers:
+    main:
+      pod:
+        nodeSelector:
+          kubernetes.io/hostname: beelink
+      containers:
+        main:
+          env:
+            DB_HOSTNAME: immich-postgres
+            DB_USERNAME: immich
+            DB_DATABASE_NAME: immich
+            DB_PASSWORD:
+              valueFrom:
+                secretKeyRef:
+                  name: immich-postgres
+                  key: password
+
+  immich:
+    persistence:
+      library:
+        existingClaim: immich-library
+
+  valkey:
+    enabled: true
+
+  server:
+    enabled: true
+    ingress:
+      main:
+        enabled: true
+        className: traefik
+        annotations:
+          kubernetes.io/ingress.class: traefik
+          kubernetes.io/tls-acme: "true"
+          nginx.ingress.kubernetes.io/proxy-body-size: null
+        hosts:
+          - host: immich.192.168.0.36.nip.io
+            paths:
+              - path: "/"
+                service:
+                  identifier: main
+
+  machine-learning:
+    enabled: true
+
+# Our own hand-rolled Postgres (the upstream chart doesn't bundle one; its
+# recommended CloudNativePG setup isn't installed in this cluster).
+postgres:
+  image:
+    repository: ghcr.io/immich-app/postgres
+    tag: 14-vectorchord0.4.3-pgvectors0.2.0
+  storage:
+    # beelink's root disk (where local-path provisions from) only has ~30Gi
+    # free today. Small to start; allowVolumeExpansion is on, so grow it
+    # later once storage moves to the cube01 SSD.
+    size: 5Gi
+
+library:
+  storage:
+    # Same ~30Gi-free constraint as postgres above -- expand later.
+    size: 15Gi
