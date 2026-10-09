@@ -16,9 +16,9 @@ dependencies:
   version: 3.9.1
 - name: bazarr
   repository: oci://oci.trueforge.org/truecharts
-  version: 24.11.0
+  version: 24.11.2
 - name: jellyfin
   repository: oci://oci.trueforge.org/truecharts
   version: 24.1.2
-digest: sha256:ccf19b340b5cc6ac286bfb92750ff508cfa17efa753c077803fac9dbaced961b
-generated: "2026-09-18T12:29:40.443267914Z"
+digest: sha256:c6debf0a5265fbaf38d13e9d055333e2e8c672c8c050384e454e3ec3a313cb89
+generated: "2026-10-09T23:41:24.473491741Z"
