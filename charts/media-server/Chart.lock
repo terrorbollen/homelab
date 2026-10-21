@@ -13,12 +13,12 @@ dependencies:
   version: 0.1.0
 - name: seerr-chart
   repository: oci://ghcr.io/seerr-team/seerr
-  version: 3.9.1
+  version: 3.10.1
 - name: bazarr
   repository: oci://oci.trueforge.org/truecharts
   version: 24.11.0
 - name: jellyfin
   repository: oci://oci.trueforge.org/truecharts
   version: 24.1.2
-digest: sha256:ccf19b340b5cc6ac286bfb92750ff508cfa17efa753c077803fac9dbaced961b
-generated: "2026-09-18T12:29:40.443267914Z"
+digest: sha256:7dca93661d1040652e80a478f47b779024e85133dc57f93137bc601b9d76de19
+generated: "2026-10-21T17:47:07.810616685Z"
