@@ -4,9 +4,9 @@ metadata:
   name: local-path
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
-    # reclaimPolicy is immutable, so Argo has to recreate the StorageClass to
-    # change it. Existing PVs keep their own policy and are not affected.
-    argocd.argoproj.io/sync-options: Replace=true
+    # reclaimPolicy is immutable, so Argo has to delete and recreate the
+    # StorageClass to change it. Existing PVs keep their own policy.
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
 provisioner: rancher.io/local-path
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer

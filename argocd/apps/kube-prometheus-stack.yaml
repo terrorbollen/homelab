@@ -15,8 +15,11 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kube-prometheus-stack
   syncPolicy:
+    # prune and selfHeal are off by default; Argo drops explicit false values,
+    # which would leave the root app permanently OutOfSync.
     automated:
-      prune: false
-      selfHeal: false
+      enabled: true
     syncOptions:
       - CreateNamespace=true
+      # The Prometheus Operator CRDs are too large for client-side apply.
+      - ServerSideApply=true

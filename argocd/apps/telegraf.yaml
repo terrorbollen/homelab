@@ -15,9 +15,10 @@ spec:
     server: https://kubernetes.default.svc
     namespace: telegraf
   syncPolicy:
+    # prune and selfHeal are off by default; Argo drops explicit false values,
+    # which would leave the root app permanently OutOfSync.
     automated:
-      prune: false
-      selfHeal: false
+      enabled: true
     syncOptions:
       - CreateNamespace=true
       - RespectIgnoreDifferences=true

@@ -3,6 +3,10 @@ kind: Application
 metadata:
   name: media
   namespace: argocd
+  annotations:
+    # TrueCharts sets hostUsers: true, which this cluster's API server drops.
+    # A server-side diff compares against what is actually stored.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: default
   source:
@@ -15,8 +19,9 @@ spec:
     server: https://kubernetes.default.svc
     namespace: media
   syncPolicy:
+    # prune and selfHeal are off by default; Argo drops explicit false values,
+    # which would leave the root app permanently OutOfSync.
     automated:
-      prune: false
-      selfHeal: false
+      enabled: true
     syncOptions:
       - CreateNamespace=true
