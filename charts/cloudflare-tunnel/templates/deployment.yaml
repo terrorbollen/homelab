@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: cloudflared-deployment
 spec:
-  replicas: 2
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       pod: cloudflared
@@ -18,7 +18,7 @@ spec:
           - name: net.ipv4.ping_group_range
             value: "65532 65532"
       containers:
-        - image: cloudflare/cloudflared:latest
+        - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           name: cloudflared
           env:
             # Defines an environment variable for the tunnel token.

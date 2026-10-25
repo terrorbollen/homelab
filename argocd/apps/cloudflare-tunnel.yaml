@@ -9,6 +9,8 @@ spec:
     repoURL: https://github.com/terrorbollen/homelab
     targetRevision: HEAD
     path: charts/cloudflare-tunnel
+    helm:
+      releaseName: cloudflare-tunnel
   destination:
     server: https://kubernetes.default.svc
     namespace: cloudflare-tunnel

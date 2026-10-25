@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: transmission
-          image: haugene/transmission-wireguard:main
+          image: "{{ .Values.transmission.image.repository }}:{{ .Values.transmission.image.tag }}"
           imagePullPolicy: Always
           securityContext:
             privileged: true

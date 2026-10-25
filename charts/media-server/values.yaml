@@ -248,6 +248,11 @@ seerr-chart:
         - ReadWriteOnce
       name: 'seerr-config'
 
+transmission:
+  image:
+    repository: haugene/transmission-wireguard
+    tag: main@sha256:25b14ad80b39757bbc5d8f545c99b5aa69feb98328206c14e3f4db30df513358
+
 # Ingress configuration
 ingress:
   enabled: true

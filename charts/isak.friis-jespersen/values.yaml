@@ -3,7 +3,7 @@ replicaCount: 3
 
 image:
   repository: gigday/ifj
-  tag: latest
+  tag: latest@sha256:2d263b48c0d3c5f783cbd9e7f676c577b3e3a9b618d24c390c827267a79419dd
   pullPolicy: IfNotPresent
 
 nameOverride: ""

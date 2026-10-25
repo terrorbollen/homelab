@@ -107,7 +107,7 @@ couchdb:
 
   initImage:
     repository: busybox
-    tag: latest
+    tag: 1.38.0
     pullPolicy: Always
 
   ## CouchDB is happy to spin up cluster nodes in parallel, but if you encounter
