@@ -20,7 +20,11 @@ spec:
       selfHeal: false
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
   ignoreDifferences:
+    # influx:telegraf is an aggregated ClusterRole: Kubernetes fills in
+    # /rules from the roles matching its aggregationRule, so the chart's
+    # rules never match the live object.
     - group: rbac.authorization.k8s.io
       kind: ClusterRole
       name: "influx:telegraf"
