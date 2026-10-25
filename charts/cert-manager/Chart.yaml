@@ -1,0 +1,11 @@
+apiVersion: v2
+name: cert-manager
+description: A Helm chart for cert-manager and the Let's Encrypt ClusterIssuer
+
+type: application
+version: 0.1.0
+appVersion: "v1.18.2"
+dependencies:
+  - name: cert-manager
+    version: "v1.18.2"
+    repository: https://charts.jetstack.io
