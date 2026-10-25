@@ -1,0 +1,3 @@
+influxdb2:
+  adminUser:
+    existingSecret: influxdb-influxdb2-auth

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: influxdb
+description: InfluxDB 2 for telegraf metrics
+type: application
+version: 0.1.0
+appVersion: "2.7.4"
+dependencies:
+  - name: influxdb2
+    version: "2.1.2"
+    repository: https://helm.influxdata.com
