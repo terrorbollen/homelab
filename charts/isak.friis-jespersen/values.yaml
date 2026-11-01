@@ -18,17 +18,13 @@ service:
 ingress:
   enabled: true
   className: traefik
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-production
+  # Public traffic arrives through the Cloudflare tunnel, which terminates
+  # TLS at Cloudflare's edge, so no certificate is issued here.
   hosts:
     - host: friis-jespersen.dev
       paths:
         - path: /
           pathType: Prefix
-  tls:
-    - secretName: friisjespersen-com-tls
-      hosts:
-        - friis-jespersen.dev
 
 resources:
   limits:
