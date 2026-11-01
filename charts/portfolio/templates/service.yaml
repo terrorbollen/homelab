@@ -1,0 +1,12 @@
+# Only the Cloudflare tunnel reaches this, via cluster DNS, so it needs
+# neither a LoadBalancer nor an Ingress.
+apiVersion: v1
+kind: Service
+metadata:
+  name: portfolio
+spec:
+  ports:
+    - port: 8081
+      targetPort: 3000
+  selector:
+    app: portfolio
