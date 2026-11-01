@@ -1,279 +1,77 @@
-# Default values for mediaserver chart
-# This is a YAML-formatted file.
-#
-jellyfin:
-  service:
-    main:
-      ports:
-        main:
-          port: 80
-          protocol: http
-          targetPort: 8096 
-
-  securityContext:
-    container:
-      PUID: 1000 
-      runAsUser: 1000
-      runAsGroup: 1000
-    pod:
-      fsGroup: 1000
-      supplementalGroups:
-        # - 568
-        - 1000
-
-  persistence:
-    config:
-      enabled: true
-      type: pvc
-      retain: true
-      size: 1Gi
-
-    media:
-      enabled: true
-      type: pvc
-      volumeName: media-ssd
-      existingClaim: media-ssd
-      mountPath: "/media"
-      subPath: "library"
-
+# Only images and resources live here. Ports, mounts and paths are fixed in
+# the templates since they're tied to the on-disk layout of the media-ssd PV.
 
 bazarr:
-  service:
-    main:
-      ports:
-        main:
-          port: 80
-          protocol: http
-          targetPort: 6767
-
-  securityContext:
-    container:
-      PUID: 1000 
-      runAsUser: 1000
-      runAsGroup: 1000
-    pod:
-      fsGroup: 1000
-      supplementalGroups:
-        # - 568
-        - 1000
-
-  persistence:
-    config:
-      enabled: true
-      type: pvc
-      retain: true
-      size: 1Gi
-
-    media:
-      enabled: true
-      type: pvc
-      volumeName: media-ssd
-      existingClaim: media-ssd
-      mountPath: "/media"
-      subPath: "library"
-
+  image:
+    repository: oci.trueforge.org/containerforge/bazarr
+    tag: 1.6.2@sha256:ebe7cc03d853e27136d4dfedea1d167277180e8da07f0d4538767d7c0f5ff17b
+  resources:
+    requests:
+      cpu: 75m
+      memory: 200Mi
+    limits:
+      cpu: 1500m
+      memory: 2400Mi
 
 emby:
-  replicaCount: 1
   image:
     repository: linuxserver/emby
-    tag: "4.8.11.0-ls254"
-    pullPolicy: IfNotPresent
+    tag: 4.8.11.0-ls254
+  resources:
+    requests:
+      cpu: 1
+      memory: 2048Mi
+    limits:
+      cpu: 5
+      memory: 4096Mi
 
-  env:
-    - name: TZ
-      value: "UTC"
-    - name: UID
-      value: "1000"
-    - name: GID
-      value: "1000"
-
-  service:
-    type: ClusterIP
-    port: 80
-
-  volumes:
-    - name: "media-ssd"
-      persistentVolumeClaim:
-        claimName: "media-ssd"
-
-  volumeMounts:
-    - name: media-ssd
-      mountPath: "/config"
-      subPath: "configs/emby"
-    - name: media-ssd
-      mountPath: "/tv"
-      subPath: "library/tv"
-    - name: media-ssd
-      mountPath: "/movies"
-      subPath: "library/movies"
-
+jellyfin:
+  image:
+    repository: oci.trueforge.org/containerforge/jellyfin
+    tag: 12.2.0@sha256:9d9cabd1031c827657bc91292abc285d7bd00d10b5bb1564419ee1cf776529ad
+  resources:
+    requests:
+      cpu: 75m
+      memory: 200Mi
+    limits:
+      cpu: 1500m
+      memory: 2400Mi
 
 prowlarr:
-  replicaCount: 1
-
   image:
     repository: linuxserver/prowlarr
-    tag: "2.0.5.5160-ls125"
-    pullPolicy: IfNotPresent
-
-  env:
-    - name: TZ
-      value: UTC
-    - name: PUID
-      value: "1000"
-    - name: PGID
-      value: "1000"
-
-  service:
-    main:
-      ports:
-        http:
-          port: 80
-          targetPort: 9696
-
-  persistence:
-    configs:
-      enabled: true
-      existingClaim: media-ssd
-      mountPath: /config
-      subPath: configs/prowlarr
-
+    tag: 2.0.5.5160-ls125
   resources:
     requests:
-      cpu: "100m"
-      memory: "250Mi"
+      cpu: 100m
+      memory: 250Mi
 
 radarr:
-  replicaCount: 1
-
   image:
     repository: linuxserver/radarr
-    tag: "5.26.2.10099-ls281"
-    pullPolicy: IfNotPresent
-
-  env:
-    - name: PUID
-      value: "1000"
-    - name: PGID
-      value: "1000"
-
-  service:
-    type: ClusterIP
-    port: 80
-
-  volumes:
-    - name: "media-ssd"
-      persistentVolumeClaim:
-        claimName: "media-ssd"
-
-  volumeMounts:
-    - name: "media-ssd"
-      mountPath: "/config"
-      subPath: "configs/radarr"
-    # Whole-PVC mount (no subPath) so /storage/downloads/... and
-    # /storage/library/... share a single bind mount inside this
-    # container -- required for "Use Hardlinks instead of Copy" to
-    # actually hardlink instead of silently falling back to a full
-    # copy. Kubernetes subPath mounts of the same PVC are treated as
-    # separate filesystems for hardlink purposes (EXDEV), even though
-    # `stat` reports matching device numbers -- confirmed via a direct
-    # `ln` test between the old /data and /movies mounts.
-    #
-    # After deploying this change, in Radarr's UI:
-    #   - Settings > Media Management > Root Folder: change
-    #     /movies -> /storage/library/movies (existing movies are
-    #     untouched on disk; this just re-points Radarr at them)
-    #   - Settings > Download Clients > Remote Path Mappings: add
-    #     Host=transmission, Remote Path=/data/,
-    #     Local Path=/storage/downloads/transmission/data/
-    #     (Transmission's own mount is unchanged, so it still reports
-    #     download paths as /data/..., but Radarr now sees the same
-    #     files at /storage/downloads/transmission/data/...)
-    - name: "media-ssd"
-      mountPath: "/storage"
-
+    tag: 5.26.2.10099-ls281
   resources:
     requests:
-      cpu: "100m"
-      memory: "250Mi"
-    limits:
+      cpu: 100m
+      memory: 250Mi
 
 sonarr:
-  replicaCount: 1
-
   image:
     repository: linuxserver/sonarr
-    tag: "4.0.15.2941-ls290"
-    pullPolicy: IfNotPresent
-
-  env:
-    - name: PUID
-      value: "1000"
-    - name: PGID
-      value: "1000"
-
-  service:
-    type: ClusterIP
-    port: 80
-
-  volumes:
-    - name: media-ssd
-      persistentVolumeClaim:
-        claimName: "media-ssd"
-
-  volumeMounts:
-    - name: media-ssd
-      mountPath: "/config"
-      subPath: "configs/sonarr"
-    - name: media-ssd
-      mountPath: "/storage"
-
+    tag: 4.0.15.2941-ls290
   resources:
     requests:
-      cpu: "100m"
-      memory: "250Mi"
-    limits:
+      cpu: 100m
+      memory: 250Mi
 
-seerr-chart:
-  service:
-    type: ClusterIP
-    port: 80
-    annotations: {}
-
-  config:
-    persistence:
-      size: 5Gi
-      accessModes:
-        - ReadWriteOnce
-      name: 'seerr-config'
+seerr:
+  image:
+    repository: ghcr.io/seerr-team/seerr
+    tag: v3.5.1
+  resources: {}
 
 transmission:
   image:
     repository: haugene/transmission-wireguard
     tag: main@sha256:25b14ad80b39757bbc5d8f545c99b5aa69feb98328206c14e3f4db30df513358
-
-# Ingress configuration
-ingress:
-  enabled: true
-  class: traefik
-  ip: "192.168.0.36"
-  host: "" # Leave empty to use nip.io with the IP
-  annotations: {}
-
-storage:
-  persistentVolume:
-    create: true
-    name: "media-ssd"
-    labels:
-      type: "local"
-    capacity: "2Ti"
-    accessMode: ReadWriteMany
-    hostPath: "/mnt/ssd/media"
-
-  persistentVolumeClaim:
-    create: true
-    name: "media-ssd"
-    accessMode: ReadWriteMany
-    capacity: "2Ti"
-
+  resources: {}

@@ -1,28 +1,5 @@
 apiVersion: v2
 name: media-server
-description: A Helm chart for media server applications
+description: Hand-rolled media server stack (Emby, Jellyfin, *arrs, Seerr, Transmission)
 type: application
-version: 0.1.0
-appVersion: "1.0.0"
-dependencies:
-  - name: emby
-    version: "0.1.0"
-    repository: https://bananaspliff.github.io/geek-charts/
-  - name: prowlarr
-    version: "4.5.2"
-    repository: https://k8s-at-home.com/charts/
-  - name: radarr
-    version: "0.1.0"
-    repository: https://bananaspliff.github.io/geek-charts/
-  - name: sonarr
-    version: "0.1.0"
-    repository: https://bananaspliff.github.io/geek-charts/
-  - name: seerr-chart
-    version: "3.10.1"
-    repository: oci://ghcr.io/seerr-team/seerr
-  - name: bazarr
-    version: "25.0.7"
-    repository: oci://oci.trueforge.org/truecharts
-  - name: jellyfin
-    version: "24.2.1"
-    repository: oci://oci.trueforge.org/truecharts
+version: 0.2.0

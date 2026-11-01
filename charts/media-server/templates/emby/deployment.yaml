@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-emby
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: emby
+  template:
+    metadata:
+      labels:
+        app: emby
+    spec:
+      containers:
+        - name: emby
+          image: "{{ .Values.emby.image.repository }}:{{ .Values.emby.image.tag }}"
+          # No PUID/PGID: the existing config is owned by the image default (911)
+          env:
+            - name: TZ
+              value: UTC
+          ports:
+            - name: http
+              containerPort: 8096
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            timeoutSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            timeoutSeconds: 30
+          resources:
+            {{- toYaml .Values.emby.resources | nindent 12 }}
+          volumeMounts:
+            - name: media-ssd
+              mountPath: /config
+              subPath: configs/emby
+            - name: media-ssd
+              mountPath: /tv
+              subPath: library/tv
+            - name: media-ssd
+              mountPath: /movies
+              subPath: library/movies
+      volumes:
+        - name: media-ssd
+          persistentVolumeClaim:
+            claimName: media-ssd

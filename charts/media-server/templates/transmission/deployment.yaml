@@ -2,10 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: transmission
-  labels:
-    app: transmission
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: transmission
@@ -17,28 +18,29 @@ spec:
       containers:
         - name: transmission
           image: "{{ .Values.transmission.image.repository }}:{{ .Values.transmission.image.tag }}"
-          imagePullPolicy: Always
           securityContext:
             privileged: true
             capabilities:
               add:
                 - NET_ADMIN
-          ports:
-            - containerPort: 9091
-              protocol: TCP
           env:
             - name: PUID
               value: "1000"
             - name: PGID
               value: "1000"
             - name: CONFIG_FILE
-              value: "/wg-config/my_wg.conf"
+              value: /wg-config/my_wg.conf
+          ports:
+            - name: http
+              containerPort: 9091
+          resources:
+            {{- toYaml .Values.transmission.resources | nindent 12 }}
           volumeMounts:
             - name: media-ssd
               mountPath: /data
               subPath: downloads/transmission/data
             - name: media-ssd
-              mountPath: "/config"
+              mountPath: /config
               subPath: configs/transmission
             - name: wireguard
               mountPath: /wg-config
