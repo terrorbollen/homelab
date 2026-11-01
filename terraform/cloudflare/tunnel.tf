@@ -14,7 +14,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
       # Existing routes, matching the live tunnel config
       {
         hostname = var.zone_name
-        service  = "http://portfolio-isak-friis-jespersen.isakfriis-jespersen.svc:8081"
+        service  = "http://portfolio.portfolio.svc:8081"
       },
       {
         hostname = var.emby_hostname

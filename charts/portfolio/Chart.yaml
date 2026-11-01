@@ -1,0 +1,5 @@
+apiVersion: v2
+name: portfolio
+description: Portfolio website at friis-jespersen.dev
+type: application
+version: 0.2.0
