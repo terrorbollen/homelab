@@ -19,7 +19,7 @@ spec:
                 port:
                   name: http
           {{- end }}
-    - host: jellyseerr.192.168.0.36.nip.io
+    - host: seerr.192.168.0.36.nip.io
       http:
         paths:
           - path: /

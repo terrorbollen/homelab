@@ -13,7 +13,7 @@ mounts and paths are fixed in `templates/` because they mirror the on-disk
 layout of the `media-ssd` volume (see `templates/storage.yaml`).
 
 All web UIs sit behind `media.192.168.0.36.nip.io/<app>` (Emby on `/`), Seerr
-on `jellyseerr.192.168.0.36.nip.io`. Emby and Jellyfin are exposed publicly via
+on `seerr.192.168.0.36.nip.io`. Emby and Jellyfin are exposed publicly via
 the Cloudflare tunnel (`terraform/cloudflare`), straight to their Services.
 
 `terrafrom/` configures Sonarr, Radarr and Prowlarr through their APIs.
