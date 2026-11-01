@@ -25,6 +25,15 @@ emby:
       cpu: 5
       memory: 4096Mi
 
+gluetun:
+  image:
+    repository: qmcgaw/gluetun
+    tag: v3.41.3
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+
 jellyfin:
   image:
     repository: oci.trueforge.org/containerforge/jellyfin
@@ -72,6 +81,6 @@ seerr:
 
 transmission:
   image:
-    repository: haugene/transmission-wireguard
-    tag: main@sha256:25b14ad80b39757bbc5d8f545c99b5aa69feb98328206c14e3f4db30df513358
+    repository: linuxserver/transmission
+    tag: 4.1.4-r0-ls367
   resources: {}

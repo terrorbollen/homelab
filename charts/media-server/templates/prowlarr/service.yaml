@@ -5,8 +5,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   selector:
-    app: prowlarr
+    app: vpn
   ports:
     - name: http
       port: 80
-      targetPort: http
+      targetPort: prowlarr

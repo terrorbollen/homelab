@@ -1,0 +1,112 @@
+# Transmission and Prowlarr share one pod so gluetun's tunnel and firewall
+# cover both: if the VPN drops, their traffic is blocked instead of leaking.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-vpn
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: vpn
+  template:
+    metadata:
+      labels:
+        app: vpn
+    spec:
+      containers:
+        - name: gluetun
+          image: "{{ .Values.gluetun.image.repository }}:{{ .Values.gluetun.image.tag }}"
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          env:
+            - name: TZ
+              value: UTC
+            - name: VPN_SERVICE_PROVIDER
+              value: custom
+            - name: VPN_TYPE
+              value: wireguard
+            - name: WIREGUARD_CONF_SECRETFILE
+              value: /wg-config/my_wg.conf
+            # Web UIs, reached through Traefik.
+            - name: FIREWALL_INPUT_PORTS
+              value: "9091,9696"
+            # Pod and Service CIDRs (k3s defaults) plus the LAN, so Prowlarr
+            # can reach Sonarr/Radarr via media.192.168.0.36.nip.io.
+            - name: FIREWALL_OUTBOUND_SUBNETS
+              value: 10.42.0.0/16,10.43.0.0/16,192.168.0.0/24
+            - name: DNS_REBINDING_PROTECTION_EXEMPT_HOSTNAMES
+              value: media.192.168.0.36.nip.io
+          livenessProbe:
+            exec:
+              command: ["/gluetun-entrypoint", "healthcheck"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          resources:
+            {{- toYaml .Values.gluetun.resources | nindent 12 }}
+          volumeMounts:
+            - name: wireguard
+              mountPath: /wg-config
+              readOnly: true
+            - name: tun
+              mountPath: /dev/net/tun
+        - name: transmission
+          image: "{{ .Values.transmission.image.repository }}:{{ .Values.transmission.image.tag }}"
+          env:
+            - name: TZ
+              value: UTC
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+          ports:
+            - name: transmission
+              containerPort: 9091
+          resources:
+            {{- toYaml .Values.transmission.resources | nindent 12 }}
+          volumeMounts:
+            - name: media-ssd
+              mountPath: /data
+              subPath: downloads/transmission/data
+            # transmission-home is where the old haugene image kept its state.
+            - name: media-ssd
+              mountPath: /config
+              subPath: configs/transmission/transmission-home
+        - name: prowlarr
+          image: "{{ .Values.prowlarr.image.repository }}:{{ .Values.prowlarr.image.tag }}"
+          env:
+            - name: TZ
+              value: UTC
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+          ports:
+            - name: prowlarr
+              containerPort: 9696
+          readinessProbe:
+            tcpSocket:
+              port: prowlarr
+          resources:
+            {{- toYaml .Values.prowlarr.resources | nindent 12 }}
+          volumeMounts:
+            - name: media-ssd
+              mountPath: /config
+              subPath: configs/prowlarr
+      volumes:
+        - name: media-ssd
+          persistentVolumeClaim:
+            claimName: media-ssd
+        - name: wireguard
+          secret:
+            secretName: wg-secret
+        - name: tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
