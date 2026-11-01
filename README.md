@@ -40,7 +40,6 @@ The cluster runs k3s, with services organized into dedicated namespaces and mana
 
 #### Secrets Management
 - **Sealed Secrets** - Encrypts secrets so they're safe to commit to git
-- **Infisical** - Secrets manager
 
 #### Networking & Access
 - **Traefik** - Ingress controller (k3s's built-in Traefik, with config overrides in `charts/traefik`)
