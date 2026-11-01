@@ -1,8 +1,12 @@
 # Media Server
 
 Hand-rolled chart for the media stack: Emby, Jellyfin, Seerr, Sonarr, Radarr,
-Prowlarr, Bazarr and Transmission (over WireGuard). Deployed by Argo CD from
+Prowlarr, Bazarr and Transmission. Deployed by Argo CD from
 `argocd/apps/media.yaml` as release `media` in namespace `media`.
+
+Transmission and Prowlarr share the `media-vpn` pod with a gluetun
+sidecar, so all their traffic goes through the Mullvad WireGuard tunnel
+(`wg-secret`). If the tunnel drops, gluetun's firewall blocks their traffic.
 
 `values.yaml` only holds images (tracked by Renovate) and resources. Ports,
 mounts and paths are fixed in `templates/` because they mirror the on-disk
