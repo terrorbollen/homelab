@@ -1,0 +1,34 @@
+# Shared media disk. Layout under /mnt/ssd/media:
+#   configs/<app>/               app config for the linuxserver images
+#   downloads/transmission/data  transmission downloads
+#   library/{movies,tv}          media library
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-ssd
+  labels:
+    type: local
+spec:
+  storageClassName: local-storage
+  persistentVolumeReclaimPolicy: Retain
+  capacity:
+    storage: 2Ti
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: /mnt/ssd/media
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-ssd
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Ti

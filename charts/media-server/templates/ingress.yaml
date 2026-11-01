@@ -1,79 +1,31 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: media-ingress
   namespace: {{ .Release.Namespace }}
-  name: "{{ .Release.Name }}-ingress"
   annotations:
-    kubernetes.io/ingress.class: traefik 
+    kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: {{ .Values.ingress.host | default (printf "media.%s.nip.io" .Values.ingress.ip) }}
+    - host: media.192.168.0.36.nip.io
       http:
         paths:
-          - path: "/transmission"
+          {{- range $path, $svc := dict "/transmission" "transmission" "/bazarr" "bazarr" "/sonarr" "sonarr" "/radarr" "radarr" "/prowlarr" "prowlarr" "/" "emby" }}
+          - path: {{ $path }}
             pathType: Prefix
             backend:
               service:
-                name: "{{ .Release.Name }}-transmission"
+                name: media-{{ $svc }}
                 port:
-                  number: 80
-          - path: "/bazarr"
-            pathType: Prefix
-            backend:
-              service:
-                name: "{{ .Release.Name }}-bazarr"
-                port:
-                  number: 80
-          - path: "/sonarr"
-            pathType: Prefix
-            backend:
-              service:
-                name: "{{ .Release.Name }}-sonarr"
-                port:
-                  number: 80
-          - path: "/radarr"
-            pathType: Prefix
-            backend:
-              service:
-                name: "{{ .Release.Name }}-radarr"
-                port:
-                  number: 80
-          - path: "/prowlarr"
-            pathType: Prefix
-            backend:
-              service:
-                name: "{{ .Release.Name }}-prowlarr"
-                port:
-                  number: 80
-          - path: "/"
-            pathType: Prefix
-            backend:
-              service:
-                name: "{{ .Release.Name }}-emby"
-                port:
-                  number: 80
-    - host: {{ .Values.ingress.host | default (printf "jellyseerr.%s.nip.io" .Values.ingress.ip) }}
+                  name: http
+          {{- end }}
+    - host: jellyseerr.192.168.0.36.nip.io
       http:
         paths:
-        - path: "/"
-          pathType: Prefix
-          backend:
-            service:
-              name: "{{ .Release.Name }}-seerr-chart"
-              port:
-                number: 80
-    - host: emby.friis-jespersen.dev
-      http:
-        paths:
-        - path: "/"
-          pathType: Prefix
-          backend:
-            service:
-              name: "{{ .Release.Name }}-emby"
-              port:
-                number: 80
-
-  tls:
-  - hosts:
-    - friis-jespersen.dev
-    secretName: friisjespersen-com-tls
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: media-seerr
+                port:
+                  name: http

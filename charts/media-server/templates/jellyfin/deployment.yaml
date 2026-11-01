@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-jellyfin
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: jellyfin
+  template:
+    metadata:
+      labels:
+        app: jellyfin
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: jellyfin
+          image: "{{ .Values.jellyfin.image.repository }}:{{ .Values.jellyfin.image.tag }}"
+          # containerforge images expect a read-only root; writable paths are
+          # the emptyDirs below
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: TZ
+              value: UTC
+            - name: UMASK
+              value: "0022"
+            - name: S6_READ_ONLY_ROOT
+              value: "1"
+            - name: JELLYFIN_CACHE_DIR
+              value: /cache
+            - name: JELLYFIN_CONFIG_DIR
+              value: /config
+            - name: JELLYFIN_DATA_DIR
+              value: /data
+            - name: JELLYFIN_LOG_DIR
+              value: /logs
+          ports:
+            - name: http
+              containerPort: 8096
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 12
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.jellyfin.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: data
+              mountPath: /data
+            - name: media-ssd
+              mountPath: /media
+              subPath: library
+            - name: cache
+              mountPath: /cache
+            - name: logs
+              mountPath: /logs
+            - name: tmp
+              mountPath: /tmp
+            - name: run
+              mountPath: /run
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: media-jellyfin-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: media-jellyfin-data
+        - name: media-ssd
+          persistentVolumeClaim:
+            claimName: media-ssd
+        - name: cache
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: run
+          emptyDir:
+            medium: Memory
+        - name: shm
+          emptyDir:
+            medium: Memory

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-radarr
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: radarr
+  template:
+    metadata:
+      labels:
+        app: radarr
+    spec:
+      containers:
+        - name: radarr
+          image: "{{ .Values.radarr.image.repository }}:{{ .Values.radarr.image.tag }}"
+          env:
+            - name: TZ
+              value: UTC
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+          ports:
+            - name: http
+              containerPort: 7878
+          resources:
+            {{- toYaml .Values.radarr.resources | nindent 12 }}
+          volumeMounts:
+            - name: media-ssd
+              mountPath: /config
+              subPath: configs/radarr
+            # Whole PVC (no subPath) so /storage/downloads and /storage/library
+            # are one mount: hardlinks across separate subPath mounts of the
+            # same PVC fail with EXDEV and silently fall back to copying.
+            # Transmission reports /data/..., mapped in the UI via a Remote
+            # Path Mapping to /storage/downloads/transmission/data/.
+            - name: media-ssd
+              mountPath: /storage
+      volumes:
+        - name: media-ssd
+          persistentVolumeClaim:
+            claimName: media-ssd
