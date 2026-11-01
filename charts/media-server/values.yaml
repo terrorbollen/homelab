@@ -37,7 +37,7 @@ gluetun:
 jellyfin:
   image:
     repository: oci.trueforge.org/containerforge/jellyfin
-    tag: 12.2.0@sha256:9d9cabd1031c827657bc91292abc285d7bd00d10b5bb1564419ee1cf776529ad
+    tag: 12.4.0@sha256:f2e16d83acd7afc9d2549128922188605cc9c6628404e5ed57b890ed94ef8336
   resources:
     requests:
       cpu: 75m
