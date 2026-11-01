@@ -1,63 +1,90 @@
-# Kubernetes Homelab
+# homelab
 
 ![image](docs/images/homelab.jpeg)
 
-A Kubernetes homelab for public-facing apps and private home services, deployed via GitOps with ArgoCD.
+**A three-node bare-metal Kubernetes cluster, run entirely from git.**
 
-## Overview
+`Running since 2023` · `3 nodes, 2 architectures` · `15 Argo CD apps` · `72 pods` · `40 Renovate PRs merged`
 
-This repo holds the Helm charts and ArgoCD Application manifests for everything running in the cluster.
+Every workload, dashboard, firewall rule and secret in this cluster is declared in this repo. Push to `main`, and Argo CD rolls it out. Renovate keeps it up to date. Cloudflare keeps the public internet at arm's length. There is no click-ops.
 
-The setup covers:
+It's a small production platform. It hosts a media pipeline that takes a request and ends with a subtitled stream, a private alternative to Google Photos, real-time note sync, and the website you may have come from. Each of these is deployed, monitored and upgraded the way you would want it done at work. The aim is not to have the most services; it's that the cluster could be wiped tonight and rebuilt from this repo tomorrow.
 
-1. **Media Server Stack** - Automated downloading, organizing, and streaming of movies/TV
-2. **Monitoring & Observability** - Metrics, logs, and dashboards for the cluster
-3. **Secrets Management** - Encrypted secrets in git plus a dedicated secrets manager
-4. **Networking & Access** - Ingress, TLS, VPN, and tunneled external access
-5. **Personal Website** - A portfolio site
-6. **Other Services** - Self-hosted LLM inference, notes sync, and photo backup
+The repo covers three layers:
+
+- **Applications.** Helm charts reconciled by Argo CD, with upstream charts wrapped where they fit and hand-written manifests where they don't.
+- **Edge.** Cloudflare, managed with Terraform, handles TLS, WAF rules, IP allowlists and rate limiting before a request ever reaches the house.
+- **Day two.** Metrics, logs, dependency updates and encrypted secrets are built in from the start rather than added later.
+
+---
+
+## Highlights
+
+- **Fully GitOps.** One root Argo CD Application fans out into 15 apps. The repo *is* the cluster.
+- **Edge as code.** Public traffic is routed through a Cloudflare Tunnel, with TLS policy, WAF rules, IP allowlists, rate limiting and AI-crawler blocking defined in Terraform.
+- **Secrets in plain sight.** Credentials are committed encrypted as `SealedSecret`s, so they can only be decrypted inside the cluster.
+- **Self-updating.** Renovate tracks every image tag, Helm chart and Terraform provider. Minor bumps merge themselves, and majors wait for a human.
+- **Full observability.** Prometheus, Loki and InfluxDB all feed into Grafana, so metrics, logs and host telemetry sit side by side.
+- **Configuration as code, all the way down.** Even the media apps' quality profiles and indexers are managed by Terraform, not set by hand in a web UI.
 
 ## Architecture
 
-The cluster runs k3s, with services organized into dedicated namespaces and managed through Helm charts.
+```mermaid
+flowchart LR
+    dev([git push]) --> gh[(GitHub)]
+    gh --> argo[Argo CD<br/>app-of-apps]
+    renovate[Renovate] -- PRs --> gh
 
-### Components
+    subgraph cluster [k3s cluster · beelink · cube01 · cube02]
+        argo --> media[Media stack]
+        argo --> apps[Immich · Obsidian sync · Portfolio]
+        argo --> obs[Observability]
+        argo --> platform[Sealed Secrets · cert-manager · Tailscale]
+        cfd[cloudflared ×2]
+    end
 
-#### Media Server Stack
-- **Jellyfin** / **Emby** - Media servers for streaming movies and TV shows
-- **Sonarr** - TV show management and automation
-- **Radarr** - Movie management and automation
-- **Bazarr** - Subtitle management
-- **Prowlarr** - Indexer management
-- **Seerr** - Media request management
-- **Transmission** - Torrent client
+    internet([Internet]) --> cf[Cloudflare edge<br/>WAF · TLS · rate limits]
+    cf -. tunnel .-> cfd
+    cfd --> media & apps
+    tf[Terraform] --> cf
+    tailnet([Tailnet]) --> platform
+```
 
-#### Monitoring & Observability
-- **kube-prometheus-stack** - Prometheus, Alertmanager, node-exporter and kube-state-metrics for cluster metrics
-- **Telegraf + InfluxDB2** - Host/container metrics collection
-- **Promtail + Loki** - Log aggregation
-- **Grafana** - Dashboards, fed by both metrics pipelines above plus the community [dotdc/grafana-dashboards-kubernetes](https://github.com/dotdc/grafana-dashboards-kubernetes) set
+## What's running
 
-#### Secrets Management
-- **Sealed Secrets** - Encrypts secrets so they're safe to commit to git
+| | |
+| --- | --- |
+| **Media** | Jellyfin, Emby, Sonarr, Radarr, Prowlarr, Bazarr, Seerr, Transmission. Hand-rolled manifests, no third-party charts |
+| **Photos** | Immich, a self-hosted Google Photos with ML-powered search |
+| **Notes** | Obsidian LiveSync on CouchDB, for real-time sync across devices |
+| **Web** | My portfolio at [friis-jespersen.dev](https://friis-jespersen.dev) |
+| **Observability** | kube-prometheus-stack, Loki + Promtail, Telegraf + InfluxDB2, Grafana |
+| **Platform** | Sealed Secrets, cert-manager, Tailscale operator, Cloudflare Tunnel |
 
-#### Networking & Access
-- **Traefik** - Ingress controller (k3s's built-in Traefik, with config overrides in `charts/traefik`)
-- **Cert-Manager** - Automated TLS certificate management with Let's Encrypt
-- **Cloudflare Tunnel** - External access without exposing a public IP
-- **Tailscale** - VPN mesh into the homelab
+## Under the hood
 
-#### Storage
-- **local-path-config** - Overrides for k3s's built-in local-path StorageClass (enables volume expansion)
+**Hardware.** A mixed-architecture cluster: one x86 mini PC and two Raspberry Pis, all running k3s v1.32. A shared SSD is attached to `cube01` and NFS-mounted on the other nodes at the same path, so media pods can be scheduled anywhere and see the same library.
 
-#### Other Services
-- **Ollama** - Self-hosted LLM inference
-- **Obsidian LiveSync** - CouchDB-backed sync server for Obsidian notes
-- **Immich** - Self-hosted photo and video backup, with machine learning-based search
-- **Portfolio Website** - Personal website
+| Node      | Hardware               | Arch    | CPU | RAM   | OS                | Role                                  |
+| --------- | ---------------------- | ------- | --- | ----- | ----------------- | ------------------------------------- |
+| `beelink` | Beelink mini PC        | amd64   | 4   | 16 GB | Ubuntu 24.04 LTS  | Control plane, heavy workloads       |
+| `cube01`  | Raspberry Pi           | arm64   | 4   | 8 GB  | Debian 12         | Worker, media SSD + NFS server        |
+| `cube02`  | Raspberry Pi           | arm64   | 4   | 4 GB  | Debian 12         | Worker                                |
 
+**GitOps.** `argocd/root.yaml` points at `argocd/apps/`, where each file is an Argo CD `Application`. Upstream Helm charts are wrapped in thin umbrella charts, so values, ingresses and secrets live next to the chart they belong to.
 
-## Acknowledgments
+**Edge security.** `terraform/cloudflare` handles TLS 1.2+ enforcement, a WAF with an IP allowlist for the media apps, rate limiting, AI-crawler blocking, SPF/DMARC and tunnel routing.
 
-- [k8s-at-home](https://github.com/k8s-at-home) for many of the Helm charts
-- [bananaspliff](https://github.com/bananaspliff) for the geek-charts repository
+**Access tiers.** Public apps go through Cloudflare. Internal tools are reachable only from the LAN or over Tailscale.
+
+## Design decisions
+
+**Sealed Secrets over a secrets manager.** Sealed Secrets keeps secrets in git next to the workloads that use them, encrypted with a key only the in-cluster controller holds. Even the Cloudflare tunnel token is a `SealedSecret`, so a rebuild needs nothing from outside the repo.
+
+**TLS at Cloudflare's edge, not in the cluster.** Public traffic arrives through the tunnel and bypasses Traefik entirely, so cert-manager's HTTP-01 challenge could never complete, and a Let's Encrypt certificate quietly expired. Rather than wiring up DNS-01, the certificates were dropped: Cloudflare terminates TLS, enforces a 1.2 floor and HTTPS-only, and the tunnel keeps the hop to the cluster encrypted.
+
+**Auto-sync on, prune and self-heal off.** Argo CD applies every change from git, but won't delete resources or revert live edits on its own. When restructuring charts (for example, changing a Deployment's selector, which Kubernetes can't patch in place), that leaves room to delete and migrate resources by hand without Argo CD racing to undo it. The trade-off is deliberate drift that has to be cleaned up manually.
+
+## Built with
+
+`k3s` · `Argo CD` · `Helm` · `Kustomize` · `Terraform` · `Cloudflare Tunnel` · `Tailscale` · `Sealed Secrets` · `Prometheus` · `Loki` · `Grafana` · `InfluxDB` · `Renovate`
