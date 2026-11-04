@@ -9,5 +9,5 @@ dependencies:
     version: "6.17.1"
     repository: https://grafana.github.io/helm-charts
   - name: loki
-    version: "9.5.10"
+    version: "20.4.1"
     repository: https://grafana-community.github.io/helm-charts
