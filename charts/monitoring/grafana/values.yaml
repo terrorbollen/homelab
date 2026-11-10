@@ -3,7 +3,7 @@ grafana:
     registry: docker.io
     repository: grafana/grafana
     # Overrides the Grafana image tag whose default is the chart appVersion
-    tag: "13.3.0"
+    tag: "13.3.1"
     sha: ""
     pullPolicy: IfNotPresent
 
