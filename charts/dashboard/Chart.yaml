@@ -1,0 +1,5 @@
+apiVersion: v2
+name: dashboard
+description: Static start page linking to the homelab's services
+type: application
+version: 0.1.0
