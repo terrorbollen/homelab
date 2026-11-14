@@ -27,9 +27,18 @@
     <div id="groups" class="space-y-10"></div>
 
     <footer class="mt-16 text-center text-xs text-slate-600">
-      k3s · beelink · cube01 · cube02 — press <kbd class="rounded border border-white/15 px-1">/</kbd> to filter, <kbd class="rounded border border-white/15 px-1">Enter</kbd> to open the first match
+      k3s · beelink · cube01 · cube02 — press <kbd class="rounded border border-white/15 px-1">/</kbd> to filter, <kbd class="rounded border border-white/15 px-1">⌘K</kbd> to jump
     </footer>
   </main>
+
+  <dialog id="palette" class="w-[min(36rem,calc(100vw-2rem))] mt-[15vh] rounded-2xl border border-white/10 bg-slate-900/95 p-0 text-slate-100 shadow-2xl backdrop:bg-slate-950/70 backdrop:backdrop-blur-sm">
+    <input id="palette-input" type="text" placeholder="Jump to service…" autocomplete="off"
+      class="w-full border-b border-white/10 bg-transparent px-5 py-4 text-base placeholder-slate-500 outline-none">
+    <ul id="palette-results" class="max-h-80 overflow-y-auto p-2"></ul>
+    <div class="flex gap-4 border-t border-white/10 px-5 py-2.5 text-xs text-slate-500">
+      <span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span>
+    </div>
+  </dialog>
 
   <script>
     const lan = (host, path = "/") => `http://${host}.192.168.0.36.nip.io${path}`;
@@ -109,7 +118,70 @@
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "/" && document.activeElement !== search) { e.preventDefault(); search.focus(); }
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openPalette(); }
     });
+
+    // fzf-style: the query's letters must appear in order; runs of consecutive
+    // letters and matches at word starts score higher. Returns null on no match.
+    const fuzzy = (query, text) => {
+      const t = text.toLowerCase();
+      const hits = [];
+      let score = 0, from = 0;
+      for (const ch of query.toLowerCase()) {
+        const i = t.indexOf(ch, from);
+        if (i < 0) return null;
+        score += 1 + (i === from && hits.length ? 3 : 0) + (i === 0 || t[i - 1] === " " ? 2 : 0);
+        hits.push(i);
+        from = i + 1;
+      }
+      return { score: score - (hits[0] ?? 0) * 0.1, hits };
+    };
+
+    const services = groups.flatMap((g) => g.services.map((s) => ({ ...s, group: g.name })));
+    const palette = document.getElementById("palette");
+    const paletteInput = document.getElementById("palette-input");
+    const paletteResults = document.getElementById("palette-results");
+    let results = [], selected = 0;
+
+    const renderPalette = () => {
+      results = services
+        .map((s) => ({ s, m: fuzzy(paletteInput.value, `${s.name} ${s.desc} ${s.group}`) }))
+        .filter((r) => r.m)
+        .sort((a, b) => b.m.score - a.m.score);
+      selected = Math.min(selected, Math.max(results.length - 1, 0));
+      paletteResults.innerHTML = results.length ? "" : `<li class="px-3 py-6 text-center text-sm text-slate-500">No matches</li>`;
+      results.forEach(({ s, m }, i) => {
+        const name = [...s.name].map((c, j) => m.hits.includes(j) ? `<span class="text-sky-400">${c}</span>` : c).join("");
+        const li = document.createElement("li");
+        li.className = `flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${i === selected ? "bg-white/10" : ""}`;
+        li.innerHTML = `
+          <img src="${s.icon}" alt="" class="h-6 w-6">
+          <span class="flex-1 font-medium">${name}</span>
+          <span class="text-xs text-slate-500">${s.group}</span>`;
+        li.addEventListener("click", () => (location.href = s.url));
+        li.addEventListener("mousemove", () => { if (selected !== i) { selected = i; renderPalette(); } });
+        paletteResults.append(li);
+      });
+      paletteResults.children[selected]?.scrollIntoView({ block: "nearest" });
+    };
+
+    const openPalette = () => {
+      paletteInput.value = "";
+      selected = 0;
+      renderPalette();
+      palette.showModal();
+    };
+
+    paletteInput.addEventListener("input", () => { selected = 0; renderPalette(); });
+    paletteInput.addEventListener("keydown", (e) => {
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && results.length) {
+        e.preventDefault();
+        selected = (selected + (e.key === "ArrowDown" ? 1 : -1) + results.length) % results.length;
+        renderPalette();
+      }
+      if (e.key === "Enter" && results[selected]) location.href = results[selected].s.url;
+    });
+    palette.addEventListener("click", (e) => { if (e.target === palette) palette.close(); });
 
     const tick = () => {
       const now = new Date();
