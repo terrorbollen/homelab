@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Homelab</title>
+  <link rel="icon" href="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/homepage.svg">
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+</head>
+<body class="min-h-full bg-slate-950 text-slate-100 antialiased">
+  <div class="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(56,189,248,0.15),_transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(168,85,247,0.15),_transparent_50%)]"></div>
+
+  <main class="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
+    <header class="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p id="greeting" class="text-sm font-medium uppercase tracking-widest text-sky-400"></p>
+        <h1 class="mt-1 text-4xl font-semibold tracking-tight">Homelab</h1>
+        <p id="clock" class="mt-1 text-slate-400 tabular-nums"></p>
+      </div>
+      <label class="relative block w-full sm:w-72">
+        <input id="search" type="search" placeholder="Filter services…" autocomplete="off"
+          class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 pr-10 text-sm placeholder-slate-500 outline-none ring-sky-400/50 backdrop-blur focus:ring-2">
+        <kbd class="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-white/15 px-1.5 text-xs text-slate-500">/</kbd>
+      </label>
+    </header>
+
+    <div id="groups" class="space-y-10"></div>
+
+    <footer class="mt-16 text-center text-xs text-slate-600">
+      k3s · beelink · cube01 · cube02 — press <kbd class="rounded border border-white/15 px-1">/</kbd> to filter, <kbd class="rounded border border-white/15 px-1">Enter</kbd> to open the first match
+    </footer>
+  </main>
+
+  <script>
+    const lan = (host, path = "/") => `http://${host}.192.168.0.36.nip.io${path}`;
+    const icon = (name) => `https://cdn.jsdelivr.net/gh/selfhst/icons/svg/${name}.svg`;
+
+    const groups = [
+      {
+        name: "Arr stack", accent: "from-sky-400 to-cyan-300", services: [
+          { name: "Seerr", desc: "Request movies & shows", url: lan("seerr"), icon: icon("overseerr") },
+          { name: "Sonarr", desc: "TV series", url: lan("media", "/sonarr/"), icon: icon("sonarr") },
+          { name: "Radarr", desc: "Movies", url: lan("media", "/radarr/"), icon: icon("radarr") },
+          { name: "Prowlarr", desc: "Indexers", url: lan("media", "/prowlarr/"), icon: icon("prowlarr") },
+          { name: "Bazarr", desc: "Subtitles", url: lan("media", "/bazarr/"), icon: icon("bazarr") },
+          { name: "Transmission", desc: "Downloads over VPN", url: lan("media", "/transmission/"), icon: icon("transmission") },
+        ],
+      },
+      {
+        name: "Media & apps", accent: "from-fuchsia-400 to-pink-300", services: [
+          { name: "Emby", desc: "Streaming", url: lan("media"), icon: icon("emby") },
+          { name: "Immich", desc: "Photos", url: lan("immich"), icon: icon("immich") },
+          { name: "Obsidian LiveSync", desc: "CouchDB admin", url: lan("obsidian-livesync", "/_utils/"), icon: icon("obsidian") },
+          { name: "Portfolio", desc: "friis-jespersen.dev", url: "https://friis-jespersen.dev", icon: icon("homepage") },
+        ],
+      },
+      {
+        name: "Infrastructure", accent: "from-amber-300 to-orange-400", services: [
+          { name: "Argo CD", desc: "GitOps", url: lan("argocd"), icon: icon("argo-cd") },
+          { name: "Grafana", desc: "Metrics & logs", url: lan("grafana"), icon: icon("grafana") },
+          { name: "Traefik", desc: "Ingress", url: lan("traefik", "/dashboard/"), icon: icon("traefik") },
+        ],
+      },
+    ];
+
+    const root = document.getElementById("groups");
+    for (const group of groups) {
+      const section = document.createElement("section");
+      section.innerHTML = `
+        <h2 class="mb-4 flex items-center gap-3 text-sm font-semibold uppercase tracking-widest text-slate-400">
+          <span class="h-2 w-2 rounded-full bg-gradient-to-r ${group.accent}"></span>${group.name}
+          <span class="h-px flex-1 bg-white/10"></span>
+        </h2>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>`;
+      const grid = section.querySelector("div");
+      for (const s of group.services) {
+        const a = document.createElement("a");
+        a.href = s.url;
+        a.dataset.search = `${s.name} ${s.desc} ${group.name}`.toLowerCase();
+        a.className = "group relative flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-sky-400/60";
+        a.innerHTML = `
+          <div class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white/5 ring-1 ring-white/10">
+            <img src="${s.icon}" alt="" class="h-8 w-8" onerror="this.replaceWith('${s.name[0]}')">
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="font-medium">${s.name}</div>
+            <div class="truncate text-sm text-slate-400">${s.desc}</div>
+          </div>
+          <span class="status h-2 w-2 rounded-full bg-slate-600" title="Checking…"></span>`;
+        grid.append(a);
+        // no-cors yields an opaque response: it can't show HTTP status, only that the host answered.
+        const dot = a.querySelector(".status");
+        fetch(s.url, { mode: "no-cors", signal: AbortSignal.timeout(5000) })
+          .then(() => { dot.className = "status h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px] shadow-emerald-400"; dot.title = "Reachable"; })
+          .catch(() => { dot.className = "status h-2 w-2 rounded-full bg-rose-500"; dot.title = "Unreachable"; });
+      }
+      root.append(section);
+    }
+
+    const search = document.getElementById("search");
+    const visible = () => [...root.querySelectorAll("a")].filter((a) => !a.hidden);
+    search.addEventListener("input", () => {
+      const q = search.value.trim().toLowerCase();
+      for (const a of root.querySelectorAll("a")) a.hidden = !a.dataset.search.includes(q);
+      for (const section of root.children) section.hidden = !section.querySelector("a:not([hidden])");
+    });
+    search.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && visible()[0]) location.href = visible()[0].href;
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "/" && document.activeElement !== search) { e.preventDefault(); search.focus(); }
+    });
+
+    const tick = () => {
+      const now = new Date();
+      const h = now.getHours();
+      document.getElementById("greeting").textContent = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+      document.getElementById("clock").textContent = now.toLocaleString(undefined, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+    };
+    tick();
+    setInterval(tick, 10000);
+  </script>
+</body>
+</html>
