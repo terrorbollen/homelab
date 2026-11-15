@@ -17,6 +17,7 @@ type Response = {
   id: string;
   status: string;
   output: OutputItem[];
+  usage?: { input_tokens: number; input_tokens_details?: { cached_tokens?: number }; output_tokens: number };
   error?: { message: string } | null;
   incomplete_details?: { reason: string } | null;
 };
@@ -27,7 +28,25 @@ type StreamEvent =
   | { type: "response.completed" | "response.failed" | "response.incomplete"; response: Response }
   | { type: "error"; message: string; code: string | null };
 
-export type Emit = (event: "text" | "progress" | "done" | "error", data: Record<string, string>) => void;
+export type Emit = (
+  event: "text" | "progress" | "usage" | "done" | "error",
+  data: Record<string, string | number>,
+) => void;
+
+// USD per 1M tokens, and per web search call.
+export type Prices = { input: number; cachedInput: number; output: number; webSearch: number };
+
+// Input includes the whole earlier conversation, which previous_response_id re-bills on every request.
+function cost(prices: Prices, response: Response) {
+  const usage = response.usage!;
+  const cached = usage.input_tokens_details?.cached_tokens ?? 0;
+  const searches = response.output.filter((item) => item.type === "web_search_call").length;
+  return (
+    ((usage.input_tokens - cached) * prices.input + cached * prices.cachedInput + usage.output_tokens * prices.output) /
+      1e6 +
+    searches * prices.webSearch
+  );
+}
 export type RunTool = (
   name: string,
   args: Record<string, unknown>,
@@ -151,6 +170,8 @@ export async function runTurn(
       onText,
       emit,
     );
+    // Sent per request, so a turn that later fails still reports what it spent.
+    if (response.usage) emit("usage", { cost: cost(cfg.openai.prices, response) });
 
     const calls = response.output.filter((item): item is FunctionCall => item.type === "function_call");
     if (!calls.length) {

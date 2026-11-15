@@ -90,7 +90,13 @@ function setup(
   const server = createServer({
     port: 0,
     prompt: "test prompt",
-    openai: { url: `${upstreams.openai.url}/v1`, key: "sk-test", model: "test-model", reasoningEffort: "low" },
+    openai: {
+      url: `${upstreams.openai.url}/v1`,
+      key: "sk-test",
+      model: "test-model",
+      reasoningEffort: "low",
+      prices: { input: 1, cachedInput: 0.1, output: 4, webSearch: 0.01 },
+    },
     sonarr: { url: sonarr.url, key: "sonarr-key" },
     radarr: { url: radarr.url, key: "radarr-key" },
     tmdb: { url: tmdb.url, key: upstreams.tmdbKey ?? "tmdb-v3-key" },
@@ -176,6 +182,35 @@ test("tool arguments that don't match the schema never reach Sonarr", async () =
 
   expect(sonarr.calls).toHaveLength(0);
   expect(toolOutput(openai, 1)).toEqual({ error: "Invalid arguments for set_monitored: id" });
+});
+
+test("each OpenAI request's cost is reported as a usage event", async () => {
+  const completed = (id: string, output: unknown[], usage: unknown) => ({
+    type: "response.completed",
+    response: { id, status: "completed", output, usage },
+  });
+  const call = { type: "function_call", call_id: "call_1", name: "get_queue", arguments: "{}" };
+  const { chat } = setup({
+    openai: fakeOpenAI([
+      [
+        completed("resp_1", [{ type: "web_search_call" }, call], {
+          input_tokens: 1000,
+          input_tokens_details: { cached_tokens: 400 },
+          output_tokens: 200,
+        }),
+      ],
+      [completed("resp_2", [{ type: "message" }], { input_tokens: 2000, output_tokens: 100 })],
+    ]),
+    sonarr: { "GET /api/v3/queue": () => ({ records: [] }) },
+    radarr: { "GET /api/v3/queue": () => ({ records: [] }) },
+  });
+
+  const events = await chat({ message: "what's downloading?" });
+
+  // (600 × $1 + 400 × $0.10 + 200 × $4) / 1M + one search at $0.01, then (2000 × $1 + 100 × $4) / 1M.
+  const costs = events.filter((e) => e.event === "usage").map((e) => e.data.cost);
+  expect(costs).toEqual([0.01144, 0.0024].map((c) => expect.closeTo(c, 10)));
+  expect(events.at(-1)).toEqual({ event: "done", data: { responseId: "resp_2" } });
 });
 
 test("previousResponseId is forwarded to OpenAI", async () => {

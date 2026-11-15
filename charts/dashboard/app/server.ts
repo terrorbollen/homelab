@@ -1,10 +1,10 @@
-import { runTurn, UserFacingError, type Emit } from "./openai.ts";
+import { runTurn, UserFacingError, type Emit, type Prices } from "./openai.ts";
 import { toolDefinitions, runTool } from "./tools.ts";
 
 export type Config = {
   port: number;
   prompt: string;
-  openai: { url: string; key: string; model: string; reasoningEffort: string };
+  openai: { url: string; key: string; model: string; reasoningEffort: string; prices: Prices };
   sonarr: { url: string; key: string };
   radarr: { url: string; key: string };
   tmdb: { url: string; key: string };
@@ -30,6 +30,13 @@ export async function configFromEnv(): Promise<Config> {
       key: env("OPENAI_API_KEY"),
       model: env("OPENAI_MODEL"),
       reasoningEffort: env("OPENAI_REASONING_EFFORT", "low"),
+      // OpenAI's API reports tokens, not money, so prices for the chosen model are configured next to it.
+      prices: {
+        input: Number(env("OPENAI_PRICE_INPUT")),
+        cachedInput: Number(env("OPENAI_PRICE_CACHED_INPUT")),
+        output: Number(env("OPENAI_PRICE_OUTPUT")),
+        webSearch: Number(env("OPENAI_PRICE_WEB_SEARCH")),
+      },
     },
     sonarr: { url: env("SONARR_URL"), key: env("SONARR_API_KEY") },
     radarr: { url: env("RADARR_URL"), key: env("RADARR_API_KEY") },
@@ -55,7 +62,7 @@ function chat(cfg: Config, body: { message?: unknown; previousResponseId?: unkno
   let lastSent = Date.now();
   let lastLabel = "Thinking…";
   const emit: Emit = (event, data) => {
-    if (event === "progress") lastLabel = data.label!;
+    if (event === "progress") lastLabel = String(data.label);
     if (!controller) return;
     try {
       controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));

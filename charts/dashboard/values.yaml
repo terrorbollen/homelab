@@ -4,3 +4,9 @@ agent:
   image: oven/bun:1.4.4-alpine
   model: gpt-6.1-terra
   reasoningEffort: low
+  # USD per 1M tokens and per web search, from OpenAI's pricing page; update them with the model.
+  prices:
+    input: 1.00
+    cachedInput: 0.05
+    output: 5.00
+    webSearch: 0.01

@@ -30,6 +30,14 @@ spec:
               value: {{ .Values.agent.model | quote }}
             - name: OPENAI_REASONING_EFFORT
               value: {{ .Values.agent.reasoningEffort | quote }}
+            - name: OPENAI_PRICE_INPUT
+              value: {{ .Values.agent.prices.input | quote }}
+            - name: OPENAI_PRICE_CACHED_INPUT
+              value: {{ .Values.agent.prices.cachedInput | quote }}
+            - name: OPENAI_PRICE_OUTPUT
+              value: {{ .Values.agent.prices.output | quote }}
+            - name: OPENAI_PRICE_WEB_SEARCH
+              value: {{ .Values.agent.prices.webSearch | quote }}
             - name: SONARR_URL
               value: http://media-sonarr.media.svc/sonarr
             - name: RADARR_URL

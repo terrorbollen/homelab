@@ -96,6 +96,11 @@
           </span>
           <h2 class="font-semibold">Media buddy</h2>
         </nav>
+        <span
+          id="chat-cost"
+          class="text-xs tabular-nums text-slate-500"
+          title="Estimated OpenAI cost of this chat"
+        ></span>
         <button
           id="chat-new"
           class="rounded-lg px-2.5 py-1 text-xs text-slate-400 hover:bg-white/10 hover:text-slate-100"
@@ -396,7 +401,10 @@
         },
         save() {
           try {
-            localStorage.setItem("chat", JSON.stringify({ ...state, messages: state.messages.filter((m) => m.text) }));
+            localStorage.setItem(
+              "chat",
+              JSON.stringify({ ...state, messages: state.messages.filter((m) => m.text || m.cost) }),
+            );
           } catch {}
         },
       };
@@ -457,7 +465,14 @@
         return DOMPurify.sanitize(marked.parse(text));
       };
 
-      const addMessage = (role, text = "") => {
+      const money = (usd) => `≈ $${usd.toFixed(usd < 0.1 ? 3 : 2)}`;
+      const chatCost = document.getElementById("chat-cost");
+      const updateTotal = () => {
+        const total = state.messages.reduce((sum, m) => sum + (m.cost ?? 0), 0);
+        chatCost.textContent = total ? money(total) : "";
+      };
+
+      const addMessage = (role, text = "", cost) => {
         const el = document.createElement("div");
         el.className =
           role === "user"
@@ -468,15 +483,19 @@
         const body = document.createElement("div");
         const chips = document.createElement("div");
         chips.className = "not-prose mt-1 flex flex-wrap gap-1.5";
-        el.append(body, chips);
+        const costLine = document.createElement("div");
+        costLine.className = "not-prose mt-1 text-xs tabular-nums text-slate-600";
+        el.append(body, chips, costLine);
         const render = (t) => {
           if (role === "assistant") body.innerHTML = markdown(t);
           else body.textContent = t;
         };
+        const setCost = (usd) => (costLine.textContent = usd ? money(usd) : "");
         render(text);
+        setCost(cost);
         chatLog.append(el);
         chatLog.scrollTop = chatLog.scrollHeight;
-        return { render, chips };
+        return { render, chips, setCost };
       };
 
       const renderAll = () => {
@@ -484,7 +503,8 @@
         if (!state.messages.length) {
           chatLog.innerHTML = `<p class="pt-10 text-center text-sm text-slate-500">Ask what to watch tonight, what's downloading,<br>or tell it to get a title.</p>`;
         }
-        for (const m of state.messages) addMessage(m.role, m.text);
+        for (const m of state.messages) addMessage(m.role, m.text, m.cost);
+        updateTotal();
       };
 
       document.getElementById("chat-new").addEventListener("click", () => {
@@ -539,6 +559,10 @@
                 chip.className = "rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-slate-400";
                 chip.textContent = data.label;
                 view.chips.append(chip);
+              } else if (event === "usage") {
+                reply.cost = (reply.cost ?? 0) + data.cost;
+                view.setCost(reply.cost);
+                updateTotal();
               } else if (event === "done") {
                 state.responseId = data.responseId;
               } else if (event === "error") {
@@ -553,7 +577,8 @@
           fail(`Can't reach the chat backend (${e.message}). The rest of the dashboard still works.`);
         } finally {
           view.chips.remove();
-          if (!reply.text) state.messages.splice(state.messages.indexOf(reply), 1);
+          // A turn that failed before writing anything may still have cost money; keep that on record.
+          if (!reply.text && !reply.cost) state.messages.splice(state.messages.indexOf(reply), 1);
           store.save();
           chatSend.disabled = false;
         }
