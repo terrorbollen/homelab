@@ -57,3 +57,25 @@ resource "radarr_remote_path_mapping" "transmission" {
   remote_path = "/data/"
   local_path  = "/storage/downloads/transmission/data/"
 }
+
+data "kubernetes_secret_v1" "bazarr" {
+  metadata {
+    name      = "bazarr-credentials"
+    namespace = "media"
+  }
+}
+
+# The provider can't set custom headers, so Bazarr's key goes in the query
+# string instead of an X-API-KEY header.
+resource "radarr_notification_webhook" "bazarr" {
+  name                           = "Bazarr Get Subs"
+  url                            = "http://media.192.168.0.36.nip.io/bazarr/api/webhooks/radarr?apikey=${data.kubernetes_secret_v1.bazarr.data["api_key"]}"
+  method                         = 1
+  on_grab                        = true
+  on_download                    = true
+  on_upgrade                     = true
+  on_movie_added                 = true
+  on_movie_delete                = false
+  on_manual_interaction_required = true
+  tags                           = []
+}
