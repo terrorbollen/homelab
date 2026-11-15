@@ -79,7 +79,13 @@
     >
       <header class="flex items-center gap-3 border-b border-white/10 px-5 py-4">
         <span class="h-2 w-2 rounded-full bg-gradient-to-r from-sky-400 to-fuchsia-400"></span>
-        <h2 class="flex-1 font-semibold">Media buddy</h2>
+        <nav aria-label="Breadcrumb" class="flex flex-1 items-center gap-2">
+          <span id="chat-crumb" hidden>
+            <a id="chat-home" href="/" class="text-slate-400 hover:text-slate-100">Homelab</a>
+            <span class="px-1 text-slate-600">/</span>
+          </span>
+          <h2 class="font-semibold">Media buddy</h2>
+        </nav>
         <button
           id="chat-new"
           class="rounded-lg px-2.5 py-1 text-xs text-slate-400 hover:bg-white/10 hover:text-slate-100"
@@ -89,8 +95,7 @@
         <a
           id="chat-full"
           href="/#chat"
-          target="_blank"
-          title="Open in a new tab"
+          title="Full page"
           class="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-slate-100"
           >⤢</a
         >
@@ -381,7 +386,7 @@
         },
         save() {
           try {
-            localStorage.setItem("chat", JSON.stringify(state));
+            localStorage.setItem("chat", JSON.stringify({ ...state, messages: state.messages.filter((m) => m.text) }));
           } catch {}
         },
       };
@@ -397,22 +402,42 @@
         chat.classList.add("translate-x-full");
       };
       const chatIsOpen = () => !chat.inert;
-      // /#chat is the chat as a full page, opened in its own tab from the panel.
-      if (location.hash === "#chat") {
-        chat.classList.replace("sm:w-[30rem]", "sm:w-full");
-        chat.classList.replace("bg-slate-950/95", "bg-slate-950");
-        for (const el of [chatLog, chatForm]) el.classList.add("px-[max(1.25rem,calc((100%-48rem)/2))]");
-        document.getElementById("chat-full").hidden = true;
-        openChat();
-      }
+
+      // /#chat shows the chat as a full page. Switching only changes the URL, never reloads,
+      // so a reply that is still streaming and a half-typed message survive the move.
+      const isFullPage = () => location.hash === "#chat";
+      const applyMode = () => {
+        const full = isFullPage();
+        chat.classList.toggle("sm:w-[30rem]", !full);
+        chat.classList.toggle("bg-slate-950/95", !full);
+        chat.classList.toggle("bg-slate-950", full);
+        for (const el of [chatLog, chatForm]) el.classList.toggle("px-[max(1.25rem,calc((100%-48rem)/2))]", full);
+        document.getElementById("chat-full").hidden = full;
+        document.getElementById("chat-crumb").hidden = !full;
+        full ? openChat() : closeChat();
+      };
+      const goToDashboard = () => {
+        history.pushState(null, "", "/");
+        applyMode();
+      };
+      const leaveChat = () => (isFullPage() ? goToDashboard() : closeChat());
+      applyMode();
+      addEventListener("hashchange", applyMode);
+      addEventListener("popstate", applyMode);
+      document.getElementById("chat-home").addEventListener("click", (e) => {
+        // Let modified clicks open the dashboard in a new tab as usual.
+        if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+        e.preventDefault();
+        goToDashboard();
+      });
       document.getElementById("chat-open").addEventListener("click", openChat);
-      document.getElementById("chat-close").addEventListener("click", closeChat);
+      document.getElementById("chat-close").addEventListener("click", leaveChat);
       document.addEventListener("keydown", (e) => {
         if (e.key === "j" && (e.metaKey || e.ctrlKey)) {
           e.preventDefault();
-          chatIsOpen() ? closeChat() : openChat();
+          chatIsOpen() ? leaveChat() : openChat();
         }
-        if (e.key === "Escape" && chatIsOpen() && !palette.open) closeChat();
+        if (e.key === "Escape" && chatIsOpen() && !palette.open) leaveChat();
       });
 
       // Model output includes web and review text, so it is untrusted: always sanitise.
@@ -466,6 +491,7 @@
         const reply = { role: "assistant", text: "" };
         state.messages.push(reply);
         const view = addMessage("assistant");
+        store.save();
         let lastChip = "";
         const fail = (text) => {
           state.messages.push({ role: "error", text });
@@ -508,6 +534,8 @@
               } else if (event === "error") {
                 fail(data.message);
               }
+              // Saved as it streams, so a reload keeps what has arrived so far.
+              store.save();
               chatLog.scrollTop = chatLog.scrollHeight;
             }
           }
