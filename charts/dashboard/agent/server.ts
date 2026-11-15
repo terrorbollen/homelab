@@ -95,7 +95,9 @@ function chat(cfg: Config, body: { message?: unknown; previousResponseId?: unkno
             clearInterval(keepAlive);
             try {
               controller?.close();
-            } catch {}
+            } catch {
+              // The client already went away and the stream is closed.
+            }
           });
       },
       cancel() {

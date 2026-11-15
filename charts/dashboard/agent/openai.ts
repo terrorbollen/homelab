@@ -28,7 +28,11 @@ type StreamEvent =
   | { type: "error"; message: string; code: string | null };
 
 export type Emit = (event: "text" | "progress" | "done" | "error", data: Record<string, string>) => void;
-export type RunTool = (name: string, args: any, progress: (label: string) => void) => Promise<unknown>;
+export type RunTool = (
+  name: string,
+  args: Record<string, unknown>,
+  progress: (label: string) => void,
+) => Promise<unknown>;
 
 export class UserFacingError extends Error {}
 
@@ -56,7 +60,9 @@ async function post(cfg: Config, body: unknown): Promise<globalThis.Response> {
       let message = text;
       try {
         message = JSON.parse(text).error?.message ?? text;
-      } catch {}
+      } catch {
+        // Not JSON, so the raw body is the best message there is.
+      }
       throw new UserFacingError(`OpenAI API error (HTTP ${res.status}): ${message}`);
     }
     const retryAfter = Number(res.headers.get("retry-after")) * 1000;

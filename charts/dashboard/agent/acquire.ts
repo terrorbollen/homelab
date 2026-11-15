@@ -5,6 +5,7 @@ import { arr, appName, gb, tmdb, type App, type MediaType, type Movie, type Seri
 import type { components as Sonarr } from "./types/sonarr.ts";
 
 type Release = Sonarr["schemas"]["ReleaseResource"];
+type Command = Sonarr["schemas"]["CommandResource"];
 type Progress = (label: string) => void;
 
 // Sonarr and Radarr word this rejection the same way (TorrentSeedingSpecification).
@@ -20,10 +21,10 @@ async function waitFor<T>(cfg: Config, check: () => Promise<T | undefined>): Pro
 }
 
 async function runCommand(cfg: Config, app: App, body: Record<string, unknown>) {
-  const command = await arr(cfg, app, "/command", { method: "POST", body });
+  const command = await arr<Command>(cfg, app, "/command", { method: "POST", body });
   const done = await waitFor(cfg, async () => {
-    const c = await arr(cfg, app, `/command/${command.id}`);
-    return ["completed", "failed", "aborted", "cancelled", "orphaned"].includes(c.status) ? c : undefined;
+    const c = await arr<Command>(cfg, app, `/command/${command.id}`);
+    return ["completed", "failed", "aborted", "cancelled", "orphaned"].includes(c.status!) ? c : undefined;
   });
   if (!done) throw new Error(`${appName[app]} search didn't finish within ${cfg.commandTimeoutMs / 60_000} minutes`);
   if (done.status !== "completed") throw new Error(`${appName[app]} search ${done.status}: ${done.message ?? ""}`);
@@ -136,7 +137,7 @@ async function acquireMovie(cfg: Config, tmdbId: number, progress: Progress) {
 }
 
 async function acquireSeries(cfg: Config, tmdbId: number, season: number | undefined, progress: Progress) {
-  const { tvdb_id } = await tmdb(cfg, `/tv/${tmdbId}/external_ids`);
+  const { tvdb_id } = await tmdb<{ tvdb_id?: number | null }>(cfg, `/tv/${tmdbId}/external_ids`);
   if (!tvdb_id) throw new Error("TMDB has no TVDB id for this show, so Sonarr can't add it");
   let [series] = await arr<Series[]>(cfg, "sonarr", `/series?tvdbId=${tvdb_id}`);
   let added = false;

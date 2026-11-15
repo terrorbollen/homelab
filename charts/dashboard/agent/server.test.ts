@@ -2,6 +2,8 @@
 import { afterEach, expect, test } from "bun:test";
 import { createServer, type Config } from "./server.ts";
 
+// Fakes record whatever JSON they were sent, and tests reach into it freely.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Call = { method: string; path: string; query: URLSearchParams; headers: Headers; body: any };
 type Routes = Record<string, (call: Call) => unknown>;
 

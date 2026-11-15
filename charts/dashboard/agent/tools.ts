@@ -7,12 +7,47 @@ import type { components as Radarr } from "./types/radarr.ts";
 
 export type Series = Sonarr["schemas"]["SeriesResource"];
 export type Movie = Radarr["schemas"]["MovieResource"];
-type Queue = Sonarr["schemas"]["QueueResourcePagingResource"] | Radarr["schemas"]["QueueResourcePagingResource"];
+type SonarrQueue = Sonarr["schemas"]["QueueResourcePagingResource"];
+type RadarrQueue = Radarr["schemas"]["QueueResourcePagingResource"];
+type QueueItem = NonNullable<SonarrQueue["records"] | RadarrQueue["records"]>[number];
+
+// TMDB and MDBList publish no types we can generate from; these cover only the fields we read.
+type TmdbTitle = {
+  id: number;
+  media_type?: string;
+  title?: string;
+  name?: string;
+  release_date?: string;
+  first_air_date?: string;
+  vote_average?: number;
+  overview?: string;
+  poster_path?: string | null;
+};
+type TmdbDetails = TmdbTitle & {
+  tagline?: string;
+  genres?: { name: string }[];
+  runtime?: number;
+  episode_run_time?: number[];
+  number_of_seasons?: number;
+  status?: string;
+  created_by?: { name: string }[];
+  external_ids?: { imdb_id?: string | null };
+  credits?: { cast?: { name: string }[]; crew?: { name: string; job: string }[] };
+  videos?: { results?: { site: string; type: string; key: string }[] };
+};
+type TmdbReview = { author: string; author_details?: { rating?: number | null }; content: string };
+type MdbListItem = {
+  title?: string;
+  year?: number;
+  ids?: { tmdb?: number };
+  tmdbid?: number;
+  ratings?: { source: string; value: number | null }[];
+};
 
 export type App = "sonarr" | "radarr";
 export type MediaType = "movie" | "tv";
 
-export async function arr<T = any>(
+export async function arr<T = unknown>(
   cfg: Config,
   app: App,
   path: string,
@@ -35,7 +70,7 @@ export async function arr<T = any>(
 
 export const appName = { sonarr: "Sonarr", radarr: "Radarr" };
 
-export async function tmdb(cfg: Config, path: string, params: Record<string, string> = {}): Promise<any> {
+export async function tmdb<T>(cfg: Config, path: string, params: Record<string, string> = {}): Promise<T> {
   // A v4 read access token is a JWT and goes in a header; a v3 key goes in the query string.
   const v4 = cfg.tmdb.key.startsWith("eyJ");
   const query = new URLSearchParams(v4 ? params : { ...params, api_key: cfg.tmdb.key });
@@ -45,13 +80,13 @@ export async function tmdb(cfg: Config, path: string, params: Record<string, str
     throw new Error(`TMDB is unreachable: ${e.message}`);
   });
   if (!res.ok) throw new Error(`TMDB returned HTTP ${res.status} for ${path}`);
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 const poster = (path?: string | null) => (path ? `https://image.tmdb.org/t/p/w342${path}` : undefined);
 const year = (date?: string) => (date ? Number(date.slice(0, 4)) : undefined);
 
-function summary(item: any, type?: MediaType) {
+function summary(item: TmdbTitle, type?: MediaType) {
   const mediaType: MediaType = type ?? (item.media_type === "tv" ? "tv" : "movie");
   return {
     type: mediaType,
@@ -106,11 +141,11 @@ async function getLibrary(cfg: Config) {
 }
 
 async function search(cfg: Config, { query, type }: { query: string; type?: MediaType }) {
-  const data = await tmdb(cfg, type ? `/search/${type}` : "/search/multi", { query });
+  const data = await tmdb<{ results: TmdbTitle[] }>(cfg, type ? `/search/${type}` : "/search/multi", { query });
   return data.results
-    .filter((r: any) => type || r.media_type !== "person")
+    .filter((r) => type || r.media_type !== "person")
     .slice(0, 10)
-    .map((r: any) => summary(r, type));
+    .map((r) => summary(r, type));
 }
 
 async function discover(
@@ -119,15 +154,15 @@ async function discover(
 ) {
   if (kind !== "trending" && !tmdbId) throw new Error(`${kind} needs a tmdbId`);
   const [data, owned] = await Promise.all([
-    tmdb(cfg, kind === "trending" ? `/trending/${type}/week` : `/${type}/${tmdbId}/${kind}`),
+    tmdb<{ results: TmdbTitle[] }>(cfg, kind === "trending" ? `/trending/${type}/week` : `/${type}/${tmdbId}/${kind}`),
     libraryIds(cfg),
   ]);
-  return data.results.slice(0, 15).map((r: any) => ({ ...summary(r, type), inLibrary: owned[type].has(r.id) }));
+  return data.results.slice(0, 15).map((r) => ({ ...summary(r, type), inLibrary: owned[type].has(r.id) }));
 }
 
 async function getDetails(cfg: Config, { type, tmdbId }: { type: MediaType; tmdbId: number }) {
   const [d, owned] = await Promise.all([
-    tmdb(cfg, `/${type}/${tmdbId}`, { append_to_response: "videos,external_ids,credits" }),
+    tmdb<TmdbDetails>(cfg, `/${type}/${tmdbId}`, { append_to_response: "videos,external_ids,credits" }),
     type === "movie"
       ? arr<Movie[]>(cfg, "radarr", `/movie?tmdbId=${tmdbId}`).then(
           (m) => m[0] && { radarrId: m[0].id, hasFile: m[0].hasFile, monitored: m[0].monitored },
@@ -153,17 +188,17 @@ async function getDetails(cfg: Config, { type, tmdbId }: { type: MediaType; tmdb
     ...summary(d, type),
     overview: d.overview,
     tagline: d.tagline || undefined,
-    genres: d.genres?.map((g: any) => g.name),
+    genres: d.genres?.map((g) => g.name),
     runtime: d.runtime ?? d.episode_run_time?.[0],
     seasons: d.number_of_seasons,
     status: d.status,
-    directors: d.credits?.crew?.filter((c: any) => c.job === "Director").map((c: any) => c.name),
-    creators: d.created_by?.map((c: any) => c.name),
-    cast: d.credits?.cast?.slice(0, 6).map((c: any) => c.name),
+    directors: d.credits?.crew?.filter((c) => c.job === "Director").map((c) => c.name),
+    creators: d.created_by?.map((c) => c.name),
+    cast: d.credits?.cast?.slice(0, 6).map((c) => c.name),
     trailers: d.videos?.results
-      ?.filter((v: any) => v.site === "YouTube" && v.type === "Trailer")
+      ?.filter((v) => v.site === "YouTube" && v.type === "Trailer")
       .slice(0, 2)
-      .map((v: any) => `https://www.youtube.com/watch?v=${v.key}`),
+      .map((v) => `https://www.youtube.com/watch?v=${v.key}`),
     imdbId,
     imdbUrl: imdbId ? `https://www.imdb.com/title/${imdbId}/` : undefined,
     tmdbUrl: `https://www.themoviedb.org/${type}/${tmdbId}`,
@@ -172,10 +207,10 @@ async function getDetails(cfg: Config, { type, tmdbId }: { type: MediaType; tmdb
 }
 
 async function getReviews(cfg: Config, { type, tmdbId }: { type: MediaType; tmdbId: number }) {
-  const data = await tmdb(cfg, `/${type}/${tmdbId}/reviews`);
+  const data = await tmdb<{ results: TmdbReview[] }>(cfg, `/${type}/${tmdbId}/reviews`);
   return data.results
     .slice(0, 5)
-    .map((r: any) => ({ author: r.author, rating: r.author_details?.rating, content: r.content.slice(0, 1500) }));
+    .map((r) => ({ author: r.author, rating: r.author_details?.rating, content: r.content.slice(0, 1500) }));
 }
 
 async function getRatings(cfg: Config, { type, tmdbIds }: { type: MediaType; tmdbIds: number[] }) {
@@ -190,39 +225,41 @@ async function getRatings(cfg: Config, { type, tmdbIds }: { type: MediaType; tmd
     throw new Error(`MDBList is unreachable: ${e.message}`);
   });
   if (!res.ok) throw new Error(`MDBList returned HTTP ${res.status}`);
-  const data = (await res.json()) as any[];
+  const data = (await res.json()) as MdbListItem[];
   return data.map((item) => ({
     title: item.title,
     year: item.year,
     tmdbId: item.ids?.tmdb ?? item.tmdbid,
-    ratings: Object.fromEntries(
-      (item.ratings ?? []).filter((r: any) => r.value != null).map((r: any) => [r.source, r.value]),
-    ),
+    ratings: Object.fromEntries((item.ratings ?? []).filter((r) => r.value != null).map((r) => [r.source, r.value])),
   }));
 }
 
 async function getQueue(cfg: Config) {
   const [sonarr, radarr] = await Promise.all([
-    arr<Queue>(cfg, "sonarr", "/queue?pageSize=100&includeSeries=true&includeEpisode=true"),
-    arr<Queue>(cfg, "radarr", "/queue?pageSize=100&includeMovie=true"),
+    arr<SonarrQueue>(cfg, "sonarr", "/queue?pageSize=100&includeSeries=true&includeEpisode=true"),
+    arr<RadarrQueue>(cfg, "radarr", "/queue?pageSize=100&includeMovie=true"),
   ]);
-  const item = (app: App, q: any) => ({
+  const item = (app: App, title: string, q: QueueItem) => ({
     app: appName[app],
-    title:
-      app === "sonarr"
-        ? `${q.series?.title ?? "?"} S${String(q.episode?.seasonNumber ?? q.seasonNumber).padStart(2, "0")}E${String(q.episode?.episodeNumber ?? "?").padStart(2, "0")}`
-        : `${q.movie?.title ?? "?"} (${q.movie?.year ?? "?"})`,
+    title,
     release: q.title,
     quality: q.quality?.quality?.name,
-    progress: q.size ? `${Math.round((1 - q.sizeleft / q.size) * 100)}%` : undefined,
+    progress: q.size ? `${Math.round((1 - (q.sizeleft ?? 0) / q.size) * 100)}%` : undefined,
     size: gb(q.size),
     timeLeft: q.timeleft,
     status: q.trackedDownloadState ?? q.status,
-    problem: q.errorMessage || q.statusMessages?.flatMap((m: any) => m.messages ?? []).join("; ") || undefined,
+    problem: q.errorMessage || q.statusMessages?.flatMap((m) => m.messages ?? []).join("; ") || undefined,
   });
+  const episode = (n?: number | null) => String(n ?? "?").padStart(2, "0");
   return [
-    ...(sonarr.records ?? []).map((q) => item("sonarr", q)),
-    ...(radarr.records ?? []).map((q) => item("radarr", q)),
+    ...(sonarr.records ?? []).map((q) =>
+      item(
+        "sonarr",
+        `${q.series?.title ?? "?"} S${episode(q.episode?.seasonNumber ?? q.seasonNumber)}E${episode(q.episode?.episodeNumber)}`,
+        q,
+      ),
+    ),
+    ...(radarr.records ?? []).map((q) => item("radarr", `${q.movie?.title ?? "?"} (${q.movie?.year ?? "?"})`, q)),
   ];
 }
 
@@ -309,7 +346,9 @@ export const toolDefinitions: FunctionTool[] = [
   fn("get_queue", "What Sonarr and Radarr are downloading right now, with progress."),
 ];
 
-const labels: Record<string, (args: any) => string> = {
+type Args = Record<string, unknown>;
+
+const labels: Record<string, (args: Args) => string> = {
   get_library: () => "Reading your library…",
   search: (a) => `Searching TMDB for “${a.query}”…`,
   discover: (a) => `Finding ${a.kind} titles…`,
@@ -321,33 +360,27 @@ const labels: Record<string, (args: any) => string> = {
   get_queue: () => "Checking the download queue…",
 };
 
+// Arguments come from the model and are shaped by each tool's JSON schema above.
+const handlers: Record<string, (cfg: Config, args: never, progress: (label: string) => void) => Promise<unknown>> = {
+  get_library: getLibrary,
+  search,
+  discover,
+  get_details: getDetails,
+  get_reviews: getReviews,
+  get_ratings: getRatings,
+  acquire,
+  set_monitored: setMonitored,
+  get_queue: getQueue,
+};
+
 export async function runTool(
   cfg: Config,
   name: string,
-  args: any,
+  args: Args,
   progress: (label: string) => void,
 ): Promise<unknown> {
-  const label = labels[name];
-  if (!label) throw new Error(`Unknown tool ${name}`);
-  progress(label(args));
-  switch (name) {
-    case "get_library":
-      return getLibrary(cfg);
-    case "search":
-      return search(cfg, args);
-    case "discover":
-      return discover(cfg, args);
-    case "get_details":
-      return getDetails(cfg, args);
-    case "get_reviews":
-      return getReviews(cfg, args);
-    case "get_ratings":
-      return getRatings(cfg, args);
-    case "acquire":
-      return acquire(cfg, args, progress);
-    case "set_monitored":
-      return setMonitored(cfg, args);
-    case "get_queue":
-      return getQueue(cfg);
-  }
+  const handler = handlers[name];
+  if (!handler) throw new Error(`Unknown tool ${name}`);
+  progress(labels[name]!(args));
+  return handler(cfg, args as never, progress);
 }
