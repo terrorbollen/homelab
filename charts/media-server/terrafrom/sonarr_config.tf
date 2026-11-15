@@ -61,3 +61,14 @@ resource "sonarr_remote_path_mapping" "transmission" {
   remote_path = "/data/"
   local_path  = "/storage/downloads/transmission/data/"
 }
+
+# Public trackers serve fake episode releases that are .exe files or
+# "SelfExtract Bundle" malware; reject them before they are grabbed.
+resource "sonarr_release_profile" "block_executables" {
+  name       = "Block executables"
+  enabled    = true
+  indexer_id = 0
+  required   = []
+  ignored    = ["/\\.(exe|scr|bat|cmd|msi|lnk)\\b/i", "SelfExtract"]
+  tags       = []
+}
