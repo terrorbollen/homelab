@@ -5,5 +5,5 @@ metadata:
 data:
 {{- range list "server.ts" "openai.ts" "tools.ts" "acquire.ts" "prompt.txt" }}
   {{ . }}: |
-{{ $.Files.Get (printf "agent/%s" .) | indent 4 }}
+{{ $.Files.Get (printf "app/%s" .) | indent 4 }}
 {{- end }}

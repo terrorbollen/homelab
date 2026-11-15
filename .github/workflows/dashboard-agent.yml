@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: charts/dashboard/agent
+        working-directory: charts/dashboard/app
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2.2.0
         with:
-          bun-version-file: charts/dashboard/agent/.tool-versions
+          bun-version-file: charts/dashboard/app/.tool-versions
       - run: bun install --frozen-lockfile
       - run: bun run format:check
       - run: bun run lint

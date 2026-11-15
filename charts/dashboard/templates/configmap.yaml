@@ -4,4 +4,4 @@ metadata:
   name: dashboard
 data:
   index.html: |
-{{ .Files.Get "index.html" | indent 4 }}
+{{ .Files.Get "app/index.html" | indent 4 }}
