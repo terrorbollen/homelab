@@ -1,0 +1,5 @@
+apiVersion: v2
+name: backup
+description: Nightly off-cluster backup of k3s state, sealed-secrets keys and app configs to Cloudflare R2
+type: application
+version: 0.1.0

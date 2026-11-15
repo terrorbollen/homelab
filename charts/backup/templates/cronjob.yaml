@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup
+  namespace: backup
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: backup
+          restartPolicy: Never
+          # The k3s database only exists on the server node; the media SSD is
+          # NFS-mounted at the same path there.
+          nodeSelector:
+            kubernetes.io/hostname: beelink
+          containers:
+            - name: backup
+              image: alpine:3.22
+              envFrom:
+                - secretRef:
+                    name: r2-credentials
+              command: ["sh", "-euc"]
+              args:
+                - |
+                  apk add --no-cache sqlite rclone kubectl >/dev/null
+                  out=/work/out
+                  mkdir -p "$out"
+
+                  # .backup takes a consistent copy while k3s keeps writing.
+                  sqlite3 /k3s/db/state.db ".backup '$out/state.db'"
+                  gzip "$out/state.db"
+                  cp /k3s/token "$out/token"
+
+                  kubectl get secret -n kube-system \
+                    -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml \
+                    > "$out/sealed-secrets-keys.yaml"
+
+                  # Logs, cover art and Emby's metadata rebuild on their own.
+                  tar -czf "$out/configs.tar.gz" -C /configs \
+                    --exclude='*/logs' --exclude='*/MediaCover' \
+                    --exclude=emby/cache --exclude=emby/metadata .
+
+                  rclone copy "$out" "r2:homelab-backup/cluster/$(date +%F)"
+                  rclone delete r2:homelab-backup/cluster --min-age 14d
+                  ls -la "$out"
+              volumeMounts:
+                - name: k3s
+                  mountPath: /k3s
+                - name: configs
+                  mountPath: /configs
+                  readOnly: true
+                - name: work
+                  mountPath: /work
+          volumes:
+            # Not read-only: SQLite needs the WAL index to read a live database.
+            - name: k3s
+              hostPath:
+                path: /var/lib/rancher/k3s/server
+                type: Directory
+            - name: configs
+              hostPath:
+                path: /mnt/ssd/media/configs
+                type: Directory
+            - name: work
+              emptyDir: {}
