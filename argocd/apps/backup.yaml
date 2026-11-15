@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backup
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/terrorbollen/homelab
+    targetRevision: HEAD
+    path: charts/backup
+    helm:
+      releaseName: backup
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: backup
+  syncPolicy:
+    # prune and selfHeal are off by default; Argo drops explicit false values,
+    # which would leave the root app permanently OutOfSync.
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
