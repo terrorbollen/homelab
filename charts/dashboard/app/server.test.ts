@@ -507,7 +507,7 @@ test("inspect_releases explains the rejections and the fallback's pick without g
   });
 });
 
-test("get_ratings returns MDBList scores with Rotten Tomatoes and Letterboxd links", async () => {
+test("get_ratings returns MDBList scores with vote counts and Rotten Tomatoes and Letterboxd links", async () => {
   const { chat, openai, mdblist } = setup({
     openai: fakeOpenAI([
       toolCall("resp_1", "get_ratings", { type: "movie", tmdbIds: [949] }),
@@ -520,10 +520,10 @@ test("get_ratings returns MDBList scores with Rotten Tomatoes and Letterboxd lin
           year: 1995,
           ids: { imdb: "tt0113277", tmdb: 949 },
           ratings: [
-            { source: "imdb", value: 8.3, url: "114" },
-            { source: "tomatoes", value: 84, url: "/m/heat_1995" },
-            { source: "popcorn", value: 94, url: "/m/heat_1995" },
-            { source: "letterboxd", value: 8.6, url: "/film/heat-1995/" },
+            { source: "imdb", value: 8.3, votes: 824525, url: "114" },
+            { source: "tomatoes", value: 84, votes: 157, url: "/m/heat_1995" },
+            { source: "popcorn", value: 94, votes: 100000, url: "/m/heat_1995" },
+            { source: "letterboxd", value: 8.6, votes: null, url: "/film/heat-1995/" },
             { source: "myanimelist", value: null },
           ],
         },
@@ -541,7 +541,12 @@ test("get_ratings returns MDBList scores with Rotten Tomatoes and Letterboxd lin
       title: "Heat",
       year: 1995,
       tmdbId: 949,
-      ratings: { imdb: 8.3, tomatoes: 84, popcorn: 94, letterboxd: 8.6 },
+      ratings: {
+        imdb: { score: 8.3, votes: 824525 },
+        tomatoes: { score: 84, votes: 157 },
+        popcorn: { score: 94, votes: 100000 },
+        letterboxd: { score: 8.6 },
+      },
       links: {
         rottenTomatoes: "https://www.rottentomatoes.com/m/heat_1995",
         letterboxd: "https://letterboxd.com/film/heat-1995/",

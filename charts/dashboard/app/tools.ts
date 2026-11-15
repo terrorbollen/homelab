@@ -41,7 +41,7 @@ type MdbListItem = {
   year?: number;
   ids?: { tmdb?: number };
   tmdbid?: number;
-  ratings?: { source: string; value: number | null; url?: string | null }[];
+  ratings?: { source: string; value: number | null; votes?: number | null; url?: string | null }[];
 };
 
 export type App = "sonarr" | "radarr";
@@ -236,7 +236,11 @@ async function getRatings(cfg: Config, { type, tmdbIds }: { type: MediaType; tmd
     title: item.title,
     year: item.year,
     tmdbId: item.ids?.tmdb ?? item.tmdbid,
-    ratings: Object.fromEntries((item.ratings ?? []).filter((r) => r.value != null).map((r) => [r.source, r.value])),
+    ratings: Object.fromEntries(
+      (item.ratings ?? [])
+        .filter((r) => r.value != null)
+        .map((r) => [r.source, { score: r.value, ...(r.votes != null && { votes: r.votes }) }]),
+    ),
     links: {
       rottenTomatoes: siteUrl(item, "tomatoes", "https://www.rottentomatoes.com"),
       letterboxd: siteUrl(item, "letterboxd", "https://letterboxd.com"),
@@ -333,7 +337,7 @@ export const toolDefinitions: FunctionTool[] = [
   fn("get_reviews", "Up to 5 TMDB user reviews for a title.", { type, tmdbId }),
   fn(
     "get_ratings",
-    "Ratings from MDBList for one or more titles of the same type: imdb (0-10), tomatoes (critics %), popcorn (audience %), metacritic (0-100), letterboxd (0-10, divide by 2 for stars), tmdb (0-100) and more, plus Rotten Tomatoes and Letterboxd links.",
+    "Ratings from MDBList for one or more titles of the same type: imdb (0-10), tomatoes (critics %), popcorn (audience %), metacritic (0-100), letterboxd (0-10, divide by 2 for stars), tmdb (0-100) and more, each with its vote count (for tomatoes, the number of critic reviews; for popcorn, audience ratings), plus Rotten Tomatoes and Letterboxd links.",
     { type, tmdbIds: { type: "array", items: { type: "integer" } } },
   ),
   fn(
