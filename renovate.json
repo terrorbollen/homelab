@@ -19,10 +19,10 @@
       "automerge": false
     },
     {
-      "description": "Bump the dashboard agent's Bun image and tool pin together, and only automerge once its tests pass",
+      "description": "Bump the dashboard's Bun image and tool pin together, and never automerge: its checks run locally (bun run verify)",
       "matchPackageNames": ["oven/bun", "bun"],
       "groupName": "bun",
-      "ignoreTests": false
+      "automerge": false
     }
   ]
 }
