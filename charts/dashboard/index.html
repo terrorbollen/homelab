@@ -400,6 +400,7 @@
       // /#chat is the chat as a full page, opened in its own tab from the panel.
       if (location.hash === "#chat") {
         chat.classList.replace("sm:w-[30rem]", "sm:w-full");
+        chat.classList.replace("bg-slate-950/95", "bg-slate-950");
         for (const el of [chatLog, chatForm]) el.classList.add("px-[max(1.25rem,calc((100%-48rem)/2))]");
         document.getElementById("chat-full").hidden = true;
         openChat();
