@@ -25,7 +25,12 @@ export async function configFromEnv(): Promise<Config> {
   return {
     port: Number(env("PORT", "8080")),
     prompt: await Bun.file(env("PROMPT_FILE", `${import.meta.dir}/prompt.txt`)).text(),
-    openai: { url: env("OPENAI_URL", "https://api.openai.com/v1"), key: env("OPENAI_API_KEY"), model: env("OPENAI_MODEL"), reasoningEffort: env("OPENAI_REASONING_EFFORT", "low") },
+    openai: {
+      url: env("OPENAI_URL", "https://api.openai.com/v1"),
+      key: env("OPENAI_API_KEY"),
+      model: env("OPENAI_MODEL"),
+      reasoningEffort: env("OPENAI_REASONING_EFFORT", "low"),
+    },
     sonarr: { url: env("SONARR_URL"), key: env("SONARR_API_KEY") },
     radarr: { url: env("RADARR_URL"), key: env("RADARR_API_KEY") },
     tmdb: { url: env("TMDB_URL", "https://api.themoviedb.org/3"), key: env("TMDB_API_KEY") },
@@ -41,7 +46,8 @@ export async function configFromEnv(): Promise<Config> {
 const encoder = new TextEncoder();
 
 function chat(cfg: Config, body: { message?: unknown; previousResponseId?: unknown }): Response {
-  if (typeof body.message !== "string" || !body.message.trim()) return Response.json({ error: "message is required" }, { status: 400 });
+  if (typeof body.message !== "string" || !body.message.trim())
+    return Response.json({ error: "message is required" }, { status: 400 });
   const message = body.message;
   const previousResponseId = typeof body.previousResponseId === "string" ? body.previousResponseId : undefined;
 
@@ -68,14 +74,28 @@ function chat(cfg: Config, body: { message?: unknown; previousResponseId?: unkno
       start(c) {
         controller = c;
         // Not awaited by the stream: a turn (and any grab in it) runs to completion even if the browser goes away.
-        runTurn(cfg, toolDefinitions, (name, args, progress) => runTool(cfg, name, args, progress), message, previousResponseId, emit)
+        runTurn(
+          cfg,
+          toolDefinitions,
+          (name, args, progress) => runTool(cfg, name, args, progress),
+          message,
+          previousResponseId,
+          emit,
+        )
           .catch((e) => {
             console.error("turn failed:", e);
-            emit("error", { message: e instanceof UserFacingError ? e.message : `Something went wrong: ${e instanceof Error ? e.message : e}` });
+            emit("error", {
+              message:
+                e instanceof UserFacingError
+                  ? e.message
+                  : `Something went wrong: ${e instanceof Error ? e.message : e}`,
+            });
           })
           .finally(() => {
             clearInterval(keepAlive);
-            try { controller?.close(); } catch {}
+            try {
+              controller?.close();
+            } catch {}
           });
       },
       cancel() {

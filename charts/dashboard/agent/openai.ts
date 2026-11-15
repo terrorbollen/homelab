@@ -11,9 +11,7 @@ export type FunctionTool = {
 
 type FunctionCall = { type: "function_call"; call_id: string; name: string; arguments: string };
 type OutputItem = FunctionCall | { type: "message" | "web_search_call" | "reasoning" };
-type InputItem =
-  | { role: "user"; content: string }
-  | { type: "function_call_output"; call_id: string; output: string };
+type InputItem = { role: "user"; content: string } | { type: "function_call_output"; call_id: string; output: string };
 
 type Response = {
   id: string;
@@ -35,7 +33,13 @@ export type RunTool = (name: string, args: any, progress: (label: string) => voi
 export class UserFacingError extends Error {}
 
 // Spend and quota errors are also 429s, but retrying them can't help.
-const NO_RETRY_CODES = ["insufficient_quota", "credit_balance_exhausted", "organization_spend_limit_exceeded", "project_spend_limit_exceeded", "organization_usage_limit_exceeded"];
+const NO_RETRY_CODES = [
+  "insufficient_quota",
+  "credit_balance_exhausted",
+  "organization_spend_limit_exceeded",
+  "project_spend_limit_exceeded",
+  "organization_usage_limit_exceeded",
+];
 
 async function post(cfg: Config, body: unknown): Promise<globalThis.Response> {
   for (let attempt = 0; ; attempt++) {
@@ -50,7 +54,9 @@ async function post(cfg: Config, body: unknown): Promise<globalThis.Response> {
     if (!retryable || attempt >= cfg.retryDelaysMs.length) {
       console.error(`openai: HTTP ${res.status}: ${text}`);
       let message = text;
-      try { message = JSON.parse(text).error?.message ?? text; } catch {}
+      try {
+        message = JSON.parse(text).error?.message ?? text;
+      } catch {}
       throw new UserFacingError(`OpenAI API error (HTTP ${res.status}): ${message}`);
     }
     const retryAfter = Number(res.headers.get("retry-after")) * 1000;
@@ -66,13 +72,22 @@ async function* events(res: globalThis.Response): AsyncGenerator<StreamEvent> {
     while ((end = buffer.indexOf("\n\n")) >= 0) {
       const frame = buffer.slice(0, end);
       buffer = buffer.slice(end + 2);
-      const data = frame.split("\n").filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trimStart()).join("\n");
+      const data = frame
+        .split("\n")
+        .filter((l) => l.startsWith("data:"))
+        .map((l) => l.slice(5).trimStart())
+        .join("\n");
       if (data && data !== "[DONE]") yield JSON.parse(data);
     }
   }
 }
 
-async function stream(cfg: Config, body: Record<string, unknown>, onText: (delta: string) => void, emit: Emit): Promise<Response> {
+async function stream(
+  cfg: Config,
+  body: Record<string, unknown>,
+  onText: (delta: string) => void,
+  emit: Emit,
+): Promise<Response> {
   const res = await post(cfg, { ...body, stream: true });
   for await (const event of events(res)) {
     switch (event.type) {
@@ -86,7 +101,9 @@ async function stream(cfg: Config, body: Record<string, unknown>, onText: (delta
         return event.response;
       case "response.failed":
       case "response.incomplete":
-        throw new UserFacingError(`OpenAI response ${event.response.status}: ${event.response.error?.message ?? event.response.incomplete_details?.reason ?? "unknown reason"}`);
+        throw new UserFacingError(
+          `OpenAI response ${event.response.status}: ${event.response.error?.message ?? event.response.incomplete_details?.reason ?? "unknown reason"}`,
+        );
       case "error":
         throw new UserFacingError(`OpenAI error: ${event.message}`);
     }
@@ -94,7 +111,14 @@ async function stream(cfg: Config, body: Record<string, unknown>, onText: (delta
   throw new UserFacingError("OpenAI stream ended before the response completed");
 }
 
-export async function runTurn(cfg: Config, tools: FunctionTool[], runTool: RunTool, message: string, previousResponseId: string | undefined, emit: Emit) {
+export async function runTurn(
+  cfg: Config,
+  tools: FunctionTool[],
+  runTool: RunTool,
+  message: string,
+  previousResponseId: string | undefined,
+  emit: Emit,
+) {
   let input: InputItem[] = [{ role: "user", content: message }];
   let previous = previousResponseId;
   let wroteText = false;
@@ -107,15 +131,20 @@ export async function runTurn(cfg: Config, tools: FunctionTool[], runTool: RunTo
 
   for (let round = 0; round <= cfg.maxToolRounds; round++) {
     roundText = false;
-    const response = await stream(cfg, {
-      model: cfg.openai.model,
-      reasoning: { effort: cfg.openai.reasoningEffort },
-      // Instructions don't carry over with previous_response_id, so they go on every request.
-      instructions: cfg.prompt,
-      tools: [...tools, { type: "web_search" }],
-      input,
-      ...(previous && { previous_response_id: previous }),
-    }, onText, emit);
+    const response = await stream(
+      cfg,
+      {
+        model: cfg.openai.model,
+        reasoning: { effort: cfg.openai.reasoningEffort },
+        // Instructions don't carry over with previous_response_id, so they go on every request.
+        instructions: cfg.prompt,
+        tools: [...tools, { type: "web_search" }],
+        input,
+        ...(previous && { previous_response_id: previous }),
+      },
+      onText,
+      emit,
+    );
 
     const calls = response.output.filter((item): item is FunctionCall => item.type === "function_call");
     if (!calls.length) {
@@ -134,7 +163,11 @@ export async function runTurn(cfg: Config, tools: FunctionTool[], runTool: RunTo
         console.error(`tool ${call.name} failed:`, e);
         output = { error: e instanceof Error ? e.message : String(e) };
       }
-      input.push({ type: "function_call_output", call_id: call.call_id, output: typeof output === "string" ? output : JSON.stringify(output) });
+      input.push({
+        type: "function_call_output",
+        call_id: call.call_id,
+        output: typeof output === "string" ? output : JSON.stringify(output),
+      });
     }
     previous = response.id;
   }
