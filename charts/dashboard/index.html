@@ -4,19 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Homelab</title>
-    <link
-      rel="icon"
-      href="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/homepage.svg"
-    />
+    <link rel="icon" href="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/homepage.svg" />
     <script src="https://cdn.tailwindcss.com/3.4.16?plugins=typography"></script>
-    <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/marked@18.1.2/lib/marked.umd.js"
-    ></script>
-    <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js"
-    ></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/marked@18.1.2/lib/marked.umd.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js"></script>
   </head>
   <body class="min-h-full bg-slate-950 text-slate-100 antialiased">
     <div
@@ -24,14 +15,9 @@
     ></div>
 
     <main class="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
-      <header
-        class="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
-      >
+      <header class="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p
-            id="greeting"
-            class="text-sm font-medium uppercase tracking-widest text-sky-400"
-          ></p>
+          <p id="greeting" class="text-sm font-medium uppercase tracking-widest text-sky-400"></p>
           <h1 class="mt-1 text-4xl font-semibold tracking-tight">Homelab</h1>
           <p id="clock" class="mt-1 text-slate-400 tabular-nums"></p>
         </div>
@@ -72,11 +58,8 @@
         class="w-full border-b border-white/10 bg-transparent px-5 py-4 text-base placeholder-slate-500 outline-none"
       />
       <ul id="palette-results" class="max-h-80 overflow-y-auto p-2"></ul>
-      <div
-        class="flex gap-4 border-t border-white/10 px-5 py-2.5 text-xs text-slate-500"
-      >
-        <span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> open</span
-        ><span><kbd>esc</kbd> close</span>
+      <div class="flex gap-4 border-t border-white/10 px-5 py-2.5 text-xs text-slate-500">
+        <span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span>
       </div>
     </dialog>
 
@@ -85,10 +68,7 @@
       title="Media chat (⌘J)"
       class="fixed bottom-5 right-5 z-10 flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-4 py-3 text-sm font-medium shadow-lg backdrop-blur transition hover:border-sky-400/50 hover:bg-slate-800"
     >
-      <span
-        class="h-2 w-2 rounded-full bg-gradient-to-r from-sky-400 to-fuchsia-400"
-      ></span
-      >Ask about media
+      <span class="h-2 w-2 rounded-full bg-gradient-to-r from-sky-400 to-fuchsia-400"></span>Ask about media
     </button>
 
     <aside
@@ -97,12 +77,8 @@
       inert
       class="fixed inset-y-0 right-0 z-20 flex w-full translate-x-full flex-col border-l border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur transition-transform duration-200 sm:w-[30rem]"
     >
-      <header
-        class="flex items-center gap-3 border-b border-white/10 px-5 py-4"
-      >
-        <span
-          class="h-2 w-2 rounded-full bg-gradient-to-r from-sky-400 to-fuchsia-400"
-        ></span>
+      <header class="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+        <span class="h-2 w-2 rounded-full bg-gradient-to-r from-sky-400 to-fuchsia-400"></span>
         <h2 class="flex-1 font-semibold">Media buddy</h2>
         <button
           id="chat-new"
@@ -118,14 +94,8 @@
           ✕
         </button>
       </header>
-      <div
-        id="chat-log"
-        class="flex-1 space-y-4 overflow-y-auto px-5 py-4"
-      ></div>
-      <form
-        id="chat-form"
-        class="flex items-end gap-2 border-t border-white/10 p-3"
-      >
+      <div id="chat-log" class="flex-1 space-y-4 overflow-y-auto px-5 py-4"></div>
+      <form id="chat-form" class="flex items-end gap-2 border-t border-white/10 p-3">
         <textarea
           id="chat-input"
           rows="1"
@@ -142,10 +112,8 @@
     </aside>
 
     <script>
-      const lan = (host, path = "/") =>
-        `http://${host}.192.168.0.36.nip.io${path}`;
-      const icon = (name) =>
-        `https://cdn.jsdelivr.net/gh/selfhst/icons/svg/${name}.svg`;
+      const lan = (host, path = "/") => `http://${host}.192.168.0.36.nip.io${path}`;
+      const icon = (name) => `https://cdn.jsdelivr.net/gh/selfhst/icons/svg/${name}.svg`;
 
       const groups = [
         {
@@ -276,8 +244,7 @@
           const dot = a.querySelector(".status");
           fetch(s.url, { mode: "no-cors", signal: AbortSignal.timeout(5000) })
             .then(() => {
-              dot.className =
-                "status h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px] shadow-emerald-400";
+              dot.className = "status h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px] shadow-emerald-400";
               dot.title = "Reachable";
             })
             .catch(() => {
@@ -289,24 +256,17 @@
       }
 
       const search = document.getElementById("search");
-      const visible = () =>
-        [...root.querySelectorAll("a")].filter((a) => !a.hidden);
+      const visible = () => [...root.querySelectorAll("a")].filter((a) => !a.hidden);
       search.addEventListener("input", () => {
         const q = search.value.trim().toLowerCase();
-        for (const a of root.querySelectorAll("a"))
-          a.hidden = !a.dataset.search.includes(q);
-        for (const section of root.children)
-          section.hidden = !section.querySelector("a:not([hidden])");
+        for (const a of root.querySelectorAll("a")) a.hidden = !a.dataset.search.includes(q);
+        for (const section of root.children) section.hidden = !section.querySelector("a:not([hidden])");
       });
       search.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && visible()[0])
-          location.href = visible()[0].href;
+        if (e.key === "Enter" && visible()[0]) location.href = visible()[0].href;
       });
       document.addEventListener("keydown", (e) => {
-        if (
-          e.key === "/" &&
-          !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)
-        ) {
+        if (e.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
           e.preventDefault();
           search.focus();
         }
@@ -326,19 +286,14 @@
         for (const ch of query.toLowerCase()) {
           const i = t.indexOf(ch, from);
           if (i < 0) return null;
-          score +=
-            1 +
-            (i === from && hits.length ? 3 : 0) +
-            (i === 0 || t[i - 1] === " " ? 2 : 0);
+          score += 1 + (i === from && hits.length ? 3 : 0) + (i === 0 || t[i - 1] === " " ? 2 : 0);
           hits.push(i);
           from = i + 1;
         }
         return { score: score - (hits[0] ?? 0) * 0.1, hits };
       };
 
-      const services = groups.flatMap((g) =>
-        g.services.map((s) => ({ ...s, group: g.name })),
-      );
+      const services = groups.flatMap((g) => g.services.map((s) => ({ ...s, group: g.name })));
       const palette = document.getElementById("palette");
       const paletteInput = document.getElementById("palette-input");
       const paletteResults = document.getElementById("palette-results");
@@ -359,9 +314,7 @@
           : `<li class="px-3 py-6 text-center text-sm text-slate-500">No matches</li>`;
         results.forEach(({ s, m }, i) => {
           const name = [...s.name]
-            .map((c, j) =>
-              m.hits.includes(j) ? `<span class="text-sky-400">${c}</span>` : c,
-            )
+            .map((c, j) => (m.hits.includes(j) ? `<span class="text-sky-400">${c}</span>` : c))
             .join("");
           const li = document.createElement("li");
           li.className = `flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${i === selected ? "bg-white/10" : ""}`;
@@ -395,13 +348,10 @@
       paletteInput.addEventListener("keydown", (e) => {
         if ((e.key === "ArrowDown" || e.key === "ArrowUp") && results.length) {
           e.preventDefault();
-          selected =
-            (selected + (e.key === "ArrowDown" ? 1 : -1) + results.length) %
-            results.length;
+          selected = (selected + (e.key === "ArrowDown" ? 1 : -1) + results.length) % results.length;
           renderPalette();
         }
-        if (e.key === "Enter" && results[selected])
-          location.href = results[selected].s.url;
+        if (e.key === "Enter" && results[selected]) location.href = results[selected].s.url;
       });
       palette.addEventListener("click", (e) => {
         if (e.target === palette) palette.close();
@@ -440,9 +390,7 @@
       };
       const chatIsOpen = () => !chat.inert;
       document.getElementById("chat-open").addEventListener("click", openChat);
-      document
-        .getElementById("chat-close")
-        .addEventListener("click", closeChat);
+      document.getElementById("chat-close").addEventListener("click", closeChat);
       document.addEventListener("keydown", (e) => {
         if (e.key === "j" && (e.metaKey || e.ctrlKey)) {
           e.preventDefault();
@@ -454,10 +402,7 @@
       // Model output includes web and review text, so it is untrusted: always sanitise.
       const markdown = (text) => {
         if (!window.marked || !window.DOMPurify)
-          return text.replace(
-            /[&<>]/g,
-            (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
-          );
+          return text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
         return DOMPurify.sanitize(marked.parse(text));
       };
 
@@ -521,9 +466,7 @@
             }),
           });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const reader = res.body
-            .pipeThrough(new TextDecoderStream())
-            .getReader();
+          const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
           let buffer = "";
           for (;;) {
             const { value, done } = await reader.read();
@@ -541,8 +484,7 @@
               } else if (event === "progress" && data.label !== lastChip) {
                 lastChip = data.label;
                 const chip = document.createElement("span");
-                chip.className =
-                  "rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-slate-400";
+                chip.className = "rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-slate-400";
                 chip.textContent = data.label;
                 view.chips.append(chip);
               } else if (event === "done") {
@@ -554,13 +496,10 @@
             }
           }
         } catch (e) {
-          fail(
-            `Can't reach the chat backend (${e.message}). The rest of the dashboard still works.`,
-          );
+          fail(`Can't reach the chat backend (${e.message}). The rest of the dashboard still works.`);
         } finally {
           view.chips.remove();
-          if (!reply.text)
-            state.messages.splice(state.messages.indexOf(reply), 1);
+          if (!reply.text) state.messages.splice(state.messages.indexOf(reply), 1);
           store.save();
           chatSend.disabled = false;
         }
@@ -594,23 +533,14 @@
         const now = new Date();
         const h = now.getHours();
         document.getElementById("greeting").textContent =
-          h < 5
-            ? "Good night"
-            : h < 12
-              ? "Good morning"
-              : h < 18
-                ? "Good afternoon"
-                : "Good evening";
-        document.getElementById("clock").textContent = now.toLocaleString(
-          undefined,
-          {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            hour: "2-digit",
-            minute: "2-digit",
-          },
-        );
+          h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+        document.getElementById("clock").textContent = now.toLocaleString(undefined, {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
       };
       tick();
       setInterval(tick, 10000);
