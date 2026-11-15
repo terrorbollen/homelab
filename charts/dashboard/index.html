@@ -86,6 +86,14 @@
         >
           New chat
         </button>
+        <a
+          id="chat-full"
+          href="/#chat"
+          target="_blank"
+          title="Open in a new tab"
+          class="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-slate-100"
+          >⤢</a
+        >
         <button
           id="chat-close"
           class="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-slate-100"
@@ -98,9 +106,9 @@
       <form id="chat-form" class="flex items-end gap-2 border-t border-white/10 p-3">
         <textarea
           id="chat-input"
-          rows="1"
+          rows="3"
           placeholder="Recommend something from my collection…"
-          class="max-h-40 flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm placeholder-slate-500 outline-none ring-sky-400/50 focus:ring-2"
+          class="max-h-72 flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base placeholder-slate-500 outline-none ring-sky-400/50 focus:ring-2"
         ></textarea>
         <button
           id="chat-send"
@@ -389,6 +397,13 @@
         chat.classList.add("translate-x-full");
       };
       const chatIsOpen = () => !chat.inert;
+      // /#chat is the chat as a full page, opened in its own tab from the panel.
+      if (location.hash === "#chat") {
+        chat.classList.replace("sm:w-[30rem]", "sm:w-full");
+        for (const el of [chatLog, chatForm]) el.classList.add("px-[max(1.25rem,calc((100%-48rem)/2))]");
+        document.getElementById("chat-full").hidden = true;
+        openChat();
+      }
       document.getElementById("chat-open").addEventListener("click", openChat);
       document.getElementById("chat-close").addEventListener("click", closeChat);
       document.addEventListener("keydown", (e) => {
@@ -510,7 +525,19 @@
         const message = chatInput.value.trim();
         if (!message || chatSend.disabled) return;
         chatInput.value = "";
+        chatInput.style.height = "";
         send(message);
+      });
+      // Grow with the text, up to the max height.
+      chatInput.addEventListener("input", () => {
+        chatInput.style.height = "auto";
+        chatInput.style.height = `${chatInput.scrollHeight}px`;
+      });
+      // A chat open in two tabs shares storage; show what the other tab saved.
+      addEventListener("storage", (e) => {
+        if (e.key !== "chat") return;
+        state = store.load();
+        renderAll();
       });
       chatInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
