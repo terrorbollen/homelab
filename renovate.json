@@ -17,6 +17,12 @@
       "matchDatasources": ["docker", "helm"],
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "description": "Bump the dashboard agent's Bun image and tool pin together, and only automerge once its tests pass",
+      "matchPackageNames": ["oven/bun", "bun"],
+      "groupName": "bun",
+      "ignoreTests": false
     }
   ]
 }
