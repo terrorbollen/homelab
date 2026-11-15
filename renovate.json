@@ -7,20 +7,15 @@
   "postUpdateOptions": ["helmUpdateSubChartArchives"],
   "packageRules": [
     {
-      "description": "Automerge patch/minor docker image tag bumps",
-      "matchDatasources": ["docker"],
+      "description": "Automerge patch/minor docker image and Helm chart bumps",
+      "matchDatasources": ["docker", "helm"],
       "matchUpdateTypes": ["patch", "minor"],
       "automerge": true
     },
     {
-      "description": "Never automerge major docker image tag bumps",
-      "matchDatasources": ["docker"],
+      "description": "Never automerge major docker image or Helm chart bumps",
+      "matchDatasources": ["docker", "helm"],
       "matchUpdateTypes": ["major"],
-      "automerge": false
-    },
-    {
-      "description": "Never automerge Helm chart dependency version bumps",
-      "matchDatasources": ["helm"],
       "automerge": false
     }
   ]
