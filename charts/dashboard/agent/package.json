@@ -6,11 +6,14 @@
     "start": "bun server.ts",
     "check": "tsc --noEmit",
     "test": "bun test",
-    "gen:types": "openapi-typescript https://raw.githubusercontent.com/Sonarr/Sonarr/develop/src/Sonarr.Api.V3/openapi.json -o types/sonarr.ts && openapi-typescript https://raw.githubusercontent.com/Radarr/Radarr/develop/src/Radarr.Api.V3/openapi.json -o types/radarr.ts"
+    "gen:types": "openapi-typescript https://raw.githubusercontent.com/Sonarr/Sonarr/develop/src/Sonarr.Api.V3/openapi.json -o types/sonarr.ts && openapi-typescript https://raw.githubusercontent.com/Radarr/Radarr/develop/src/Radarr.Api.V3/openapi.json -o types/radarr.ts",
+    "format": "prettier --write . ../index.html",
+    "format:check": "prettier --check . ../index.html"
   },
   "devDependencies": {
     "@types/bun": "1.4.4",
     "openapi-typescript": "7.13.0",
+    "prettier": "3.9.10",
     "typescript": "5.9.3"
   }
 }

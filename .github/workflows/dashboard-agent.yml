@@ -18,5 +18,6 @@ jobs:
         with:
           bun-version-file: charts/dashboard/agent/.tool-versions
       - run: bun install --frozen-lockfile
+      - run: bun run format:check
       - run: bun run check
       - run: bun test
