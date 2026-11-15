@@ -106,7 +106,7 @@ resource "prowlarr_indexer" "pirates_paradise" {
   ]
 }
 
-data "kubernetes_secret" "prowlarr_seedpool" {
+data "kubernetes_secret_v1" "prowlarr_seedpool" {
   metadata {
     name      = "prowlarr-seedpool-credentials"
     namespace = "media"
@@ -128,7 +128,7 @@ resource "prowlarr_indexer" "seedpool_api" {
     { name = "torrentBaseSettings.preferMagnetUrl", bool_value = false },
     { name = "single_file_release_use_filename", bool_value = true },
     { name = "tmdbidonly", bool_value = true },
-    { name = "apikey", sensitive_value = data.kubernetes_secret.prowlarr_seedpool.data["apikey"] },
+    { name = "apikey", sensitive_value = data.kubernetes_secret_v1.prowlarr_seedpool.data["apikey"] },
     { name = "baseSettings.limitsUnit", number_value = 0 },
     { name = "baseUrl", text_value = "https://seedpool.org/" },
     { name = "definitionFile", text_value = "seedpool-api" },

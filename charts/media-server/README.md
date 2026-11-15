@@ -16,4 +16,5 @@ All web UIs sit behind `media.192.168.0.36.nip.io/<app>` (Emby on `/`), Seerr
 on `seerr.192.168.0.36.nip.io`. Emby and Jellyfin are exposed publicly via
 the Cloudflare tunnel (`terraform/cloudflare`), straight to their Services.
 
-`terrafrom/` configures Sonarr, Radarr and Prowlarr through their APIs.
+`terraform/{sonarr,radarr,prowlarr}/` configure each app through its API, one
+Terraform root and state per app.
