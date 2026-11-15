@@ -17,6 +17,12 @@
       "matchDatasources": ["docker", "helm"],
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "description": "Bump the dashboard's Bun image and tool pin together, and never automerge: its checks run locally (bun run verify)",
+      "matchPackageNames": ["oven/bun", "bun"],
+      "groupName": "bun",
+      "automerge": false
     }
   ]
 }
