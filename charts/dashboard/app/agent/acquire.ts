@@ -2,8 +2,10 @@
 // and only if they grab nothing, take the best release whose sole rejection is the seeder minimum.
 // inspectReleases shows the same verdicts without grabbing anything.
 import type { Config } from "./server.ts";
-import { arr, appName, gb, tmdb, type App, type MediaType, type Movie, type Series } from "./tools.ts";
-import type { components as Sonarr } from "./types/sonarr.ts";
+import { arr, appName, type App, type Movie, type Series } from "./arr.ts";
+import { gb } from "./format.ts";
+import { tmdb, type MediaType } from "./tmdb.ts";
+import type { components as Sonarr } from "../types/sonarr.ts";
 
 type Release = Sonarr["schemas"]["ReleaseResource"];
 type Command = Sonarr["schemas"]["CommandResource"];

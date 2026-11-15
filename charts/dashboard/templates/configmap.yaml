@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: dashboard
-data:
-  index.html: |
-{{ .Files.Get "app/index.html" | indent 4 }}

@@ -3,7 +3,8 @@ kind: ConfigMap
 metadata:
   name: dashboard-agent
 data:
-{{- range list "server.ts" "openai.ts" "tools.ts" "acquire.ts" "prompt.txt" }}
-  {{ . }}: |
-{{ $.Files.Get (printf "app/%s" .) | indent 4 }}
+  # Every file in app/agent runs as is under Bun; ConfigMap keys can't hold a "/", so the folder stays flat.
+{{- range $path, $_ := .Files.Glob "app/agent/*" }}
+  {{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
 {{- end }}

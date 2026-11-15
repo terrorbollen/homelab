@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" class="h-full [color-scheme:dark]">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Homelab</title>
+    <link rel="icon" href="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/homepage.svg" />
+    <script src="https://cdn.tailwindcss.com/3.4.16?plugins=typography"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/marked@18.1.2/lib/marked.umd.js"
+      integrity="sha384-nCN5FOaVTXXYilftBH/VQuC9ypBYOxrctAZn2x7ggYClXaporWSzM0y+ODhb8MTi"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js"
+      integrity="sha384-P0JNneQf81HOl9VwNXK76cQ9VMD6Nfsnepxb0cCOg8+UzEdzgPHAPV4wVQrvYQSx"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body class="min-h-full bg-slate-950 text-slate-100 antialiased">
+    <div
+      class="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(56,189,248,0.15),_transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(168,85,247,0.15),_transparent_50%)]"
+    ></div>
+
+    <main class="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
+      <header class="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p id="greeting" class="text-sm font-medium uppercase tracking-widest text-sky-400"></p>
+          <h1 class="mt-1 text-4xl font-semibold tracking-tight">Homelab</h1>
+          <p id="clock" class="mt-1 text-slate-400 tabular-nums"></p>
+        </div>
+        <label class="relative block w-full sm:w-72">
+          <input
+            id="search"
+            type="search"
+            placeholder="Filter services…"
+            autocomplete="off"
+            class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 pr-10 text-sm placeholder-slate-500 outline-none ring-sky-400/50 backdrop-blur focus:ring-2"
+          />
+          <kbd
+            class="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-white/15 px-1.5 text-xs text-slate-500"
+            >/</kbd
+          >
+        </label>
+      </header>
+
+      <div id="groups" class="space-y-10"></div>
+
+      <footer class="mt-16 text-center text-xs text-slate-600">
+        k3s · beelink · cube01 · cube02 — press
+        <kbd class="rounded border border-white/15 px-1">/</kbd> to filter,
+        <kbd class="rounded border border-white/15 px-1">⌘K</kbd> to jump,
+        <kbd class="rounded border border-white/15 px-1">⌘J</kbd> to chat
+      </footer>
+    </main>
+
+    <dialog
+      id="palette"
+      class="w-[min(36rem,calc(100vw-2rem))] mt-[15vh] rounded-2xl border border-white/10 bg-slate-900/95 p-0 text-slate-100 shadow-2xl backdrop:bg-slate-950/70 backdrop:backdrop-blur-sm"
+    >
+      <input
+        id="palette-input"
+        type="text"
+        placeholder="Jump to service…"
+        autocomplete="off"
+        class="w-full border-b border-white/10 bg-transparent px-5 py-4 text-base placeholder-slate-500 outline-none"
+      />
+      <ul id="palette-results" class="max-h-80 overflow-y-auto p-2"></ul>
+      <div class="flex gap-4 border-t border-white/10 px-5 py-2.5 text-xs text-slate-500">
+        <span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span>
+      </div>
+    </dialog>
+
+    <button
+      id="chat-open"
+      title="Media chat (⌘J)"
+      class="fixed bottom-5 right-5 z-10 flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-4 py-3 text-sm font-medium shadow-lg backdrop-blur transition hover:border-sky-400/50 hover:bg-slate-800"
+    >
+      <span class="h-2 w-2 rounded-full bg-gradient-to-r from-sky-400 to-fuchsia-400"></span>Ask about media
+    </button>
+
+    <aside
+      id="chat"
+      aria-label="Media chat"
+      inert
+      class="fixed inset-y-0 right-0 z-20 flex w-full translate-x-full flex-col border-l border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur transition-transform duration-200 sm:w-[30rem]"
+    >
+      <header class="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+        <span class="h-2 w-2 rounded-full bg-gradient-to-r from-sky-400 to-fuchsia-400"></span>
+        <nav aria-label="Breadcrumb" class="flex flex-1 items-center gap-2">
+          <span id="chat-crumb" hidden>
+            <a id="chat-home" href="/" class="text-slate-400 hover:text-slate-100">Homelab</a>
+            <span class="px-1 text-slate-600">/</span>
+          </span>
+          <h2 class="font-semibold">Media buddy</h2>
+        </nav>
+        <span
+          id="chat-cost"
+          class="text-xs tabular-nums text-slate-500"
+          title="Estimated OpenAI cost of this chat"
+        ></span>
+        <button
+          id="chat-new"
+          class="rounded-lg px-2.5 py-1 text-xs text-slate-400 hover:bg-white/10 hover:text-slate-100"
+        >
+          New chat
+        </button>
+        <a
+          id="chat-full"
+          href="/#chat"
+          title="Full page"
+          class="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-slate-100"
+          >⤢</a
+        >
+        <button
+          id="chat-close"
+          class="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-slate-100"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </header>
+      <div id="chat-log" class="flex-1 space-y-4 overflow-y-auto px-5 py-4"></div>
+      <form id="chat-form" class="flex items-end gap-2 border-t border-white/10 p-3">
+        <textarea
+          id="chat-input"
+          rows="3"
+          placeholder="Recommend something from my collection…"
+          class="max-h-72 flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base placeholder-slate-500 outline-none ring-sky-400/50 focus:ring-2"
+        ></textarea>
+        <button
+          id="chat-send"
+          class="rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-medium text-slate-950 hover:bg-sky-400 disabled:opacity-40"
+        >
+          Send
+        </button>
+      </form>
+    </aside>
+
+    <script src="dashboard.js"></script>
+    <script src="chat.js"></script>
+  </body>
+</html>
