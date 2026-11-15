@@ -104,7 +104,11 @@ function setup(
   });
   servers.push(server);
   const chat = async (body: unknown) => {
-    const res = await fetch(`http://localhost:${server.port}/api/chat`, { method: "POST", body: JSON.stringify(body) });
+    const res = await fetch(`http://localhost:${server.port}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
     return parseSSE(await res.text());
   };
   return { chat, url: `http://localhost:${server.port}`, openai: upstreams.openai, sonarr, radarr, tmdb, mdblist };
@@ -144,6 +148,34 @@ test("plain text streams through as text events, then done with the response id"
   });
   expect(request.body.tools).toContainEqual({ type: "web_search" });
   expect(request.body.previous_response_id).toBeUndefined();
+});
+
+test("cross-site requests are refused before reaching OpenAI", async () => {
+  const { url, openai } = setup({ openai: fakeOpenAI([reply("resp_1", "should not run")]) });
+  const post = (headers: Record<string, string>) =>
+    fetch(`${url}/api/chat`, { method: "POST", headers, body: JSON.stringify({ message: "get heat" }) });
+
+  // A form or no-cors fetch from another site can only send "simple" content types like text/plain.
+  expect((await post({ "content-type": "text/plain" })).status).toBe(415);
+  expect((await post({ "content-type": "application/json", "sec-fetch-site": "cross-site" })).status).toBe(403);
+  expect((await post({ "content-type": "application/json", "sec-fetch-site": "same-origin" })).status).toBe(200);
+  await Bun.sleep(50);
+  expect(openai.calls).toHaveLength(1);
+});
+
+test("tool arguments that don't match the schema never reach Sonarr", async () => {
+  const { chat, openai, sonarr } = setup({
+    openai: fakeOpenAI([
+      toolCall("resp_1", "set_monitored", { app: "sonarr", id: "../config/host", monitored: false }),
+      reply("resp_2", "Refused."),
+    ]),
+    sonarr: { "GET /api/v3/config/host": () => ({ apiKey: "secret" }) },
+  });
+
+  await chat({ message: "unmonitor it" });
+
+  expect(sonarr.calls).toHaveLength(0);
+  expect(toolOutput(openai, 1)).toEqual({ error: "Invalid arguments for set_monitored: id" });
 });
 
 test("previousResponseId is forwarded to OpenAI", async () => {
@@ -532,6 +564,7 @@ test("the turn completes and the grab happens even when the client disconnects m
   const abort = new AbortController();
   const res = await fetch(`${url}/api/chat`, {
     method: "POST",
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({ message: "get heat" }),
     signal: abort.signal,
   });

@@ -83,7 +83,7 @@ function chat(cfg: Config, body: { message?: unknown; previousResponseId?: unkno
           emit,
         )
           .catch((e) => {
-            console.error("turn failed:", e);
+            console.error(`turn failed: ${e instanceof Error ? e.message : e}`);
             emit("error", {
               message:
                 e instanceof UserFacingError
@@ -115,7 +115,16 @@ export function createServer(cfg: Config) {
     routes: {
       "/api/health": new Response("ok"),
       "/api/chat": {
-        POST: async (req) => chat(cfg, (await req.json().catch(() => ({}))) as Record<string, unknown>),
+        POST: async (req) => {
+          // Any site the user visits could otherwise POST here as text/plain, which browsers send
+          // cross-origin without asking. Requiring JSON forces a CORS preflight that foreign sites fail.
+          if (!req.headers.get("content-type")?.startsWith("application/json"))
+            return Response.json({ error: "Content-Type must be application/json" }, { status: 415 });
+          const site = req.headers.get("sec-fetch-site");
+          if (site && site !== "same-origin" && site !== "none")
+            return Response.json({ error: "Cross-site requests are not allowed" }, { status: 403 });
+          return chat(cfg, (await req.json().catch(() => ({}))) as Record<string, unknown>);
+        },
       },
     },
     fetch: () => new Response("Not found", { status: 404 }),

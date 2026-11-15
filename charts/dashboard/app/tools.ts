@@ -377,7 +377,7 @@ const labels: Record<string, (args: Args) => string> = {
   get_queue: () => "Checking the download queue…",
 };
 
-// Arguments come from the model and are shaped by each tool's JSON schema above.
+// Arguments come from the model; runTool checks them against each tool's JSON schema above.
 const handlers: Record<string, (cfg: Config, args: never, progress: (label: string) => void) => Promise<unknown>> = {
   get_library: getLibrary,
   search,
@@ -391,14 +391,39 @@ const handlers: Record<string, (cfg: Config, args: never, progress: (label: stri
   get_queue: getQueue,
 };
 
+type Schema = { type: string; enum?: unknown[]; items?: Schema };
+const valid = (s: Schema, v: unknown): boolean =>
+  (s.type === "integer"
+    ? Number.isInteger(v)
+    : s.type === "array"
+      ? Array.isArray(v) && v.every((x) => valid(s.items!, x))
+      : typeof v === s.type) &&
+  (!s.enum || s.enum.includes(v));
+
+// The model can be steered by text it reads (web pages, reviews), and arguments end up in
+// Sonarr/Radarr URL paths, so hold every call to its schema: an id like "../config/host" never gets through.
+function checkArgs(tool: FunctionTool, raw: Args): Args {
+  const { properties, required } = tool.parameters as { properties: Record<string, Schema>; required: string[] };
+  const args = Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== null));
+  const bad = [
+    ...required.filter((k) => !(k in args)),
+    ...Object.entries(args)
+      .filter(([k, v]) => !properties[k] || !valid(properties[k], v))
+      .map(([k]) => k),
+  ];
+  if (bad.length) throw new Error(`Invalid arguments for ${tool.name}: ${bad.join(", ")}`);
+  return args;
+}
+
 export async function runTool(
   cfg: Config,
   name: string,
-  args: Args,
+  raw: Args,
   progress: (label: string) => void,
 ): Promise<unknown> {
-  const handler = handlers[name];
-  if (!handler) throw new Error(`Unknown tool ${name}`);
+  const tool = toolDefinitions.find((t) => t.name === name);
+  if (!tool) throw new Error(`Unknown tool ${name}`);
+  const args = checkArgs(tool, raw);
   progress(labels[name]!(args));
-  return handler(cfg, args as never, progress);
+  return handlers[name]!(cfg, args as never, progress);
 }

@@ -166,7 +166,8 @@ export async function runTurn(
         output = await runTool(call.name, JSON.parse(call.arguments), (label) => emit("progress", { label }));
       } catch (e) {
         // The model gets the error so it can tell the user which app failed.
-        console.error(`tool ${call.name} failed:`, e);
+        // Only the message: a failed fetch's error object carries the URL, and some URLs hold API keys.
+        console.error(`tool ${call.name} failed: ${e instanceof Error ? e.message : e}`);
         output = { error: e instanceof Error ? e.message : String(e) };
       }
       input.push({
