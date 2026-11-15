@@ -1,7 +1,7 @@
 // The model's tools. Each one hard-codes its endpoints; there is no generic API pass-through.
 import type { FunctionTool } from "./openai.ts";
 import type { Config } from "./server.ts";
-import { acquire } from "./acquire.ts";
+import { acquire, inspectReleases } from "./acquire.ts";
 import type { components as Sonarr } from "./types/sonarr.ts";
 import type { components as Radarr } from "./types/radarr.ts";
 
@@ -41,7 +41,7 @@ type MdbListItem = {
   year?: number;
   ids?: { tmdb?: number };
   tmdbid?: number;
-  ratings?: { source: string; value: number | null }[];
+  ratings?: { source: string; value: number | null; url?: string | null }[];
 };
 
 export type App = "sonarr" | "radarr";
@@ -213,6 +213,12 @@ async function getReviews(cfg: Config, { type, tmdbId }: { type: MediaType; tmdb
     .map((r) => ({ author: r.author, rating: r.author_details?.rating, content: r.content.slice(0, 1500) }));
 }
 
+// MDBList gives each rating the site's own path (e.g. "/m/heat_1995"), not a full URL.
+const siteUrl = (item: MdbListItem, source: string, base: string) => {
+  const path = item.ratings?.find((r) => r.source === source)?.url;
+  return path ? `${base}${path}` : undefined;
+};
+
 async function getRatings(cfg: Config, { type, tmdbIds }: { type: MediaType; tmdbIds: number[] }) {
   const res = await fetch(
     `${cfg.mdblist.url}/tmdb/${type === "tv" ? "show" : "movie"}/?apikey=${encodeURIComponent(cfg.mdblist.key)}`,
@@ -231,6 +237,10 @@ async function getRatings(cfg: Config, { type, tmdbIds }: { type: MediaType; tmd
     year: item.year,
     tmdbId: item.ids?.tmdb ?? item.tmdbid,
     ratings: Object.fromEntries((item.ratings ?? []).filter((r) => r.value != null).map((r) => [r.source, r.value])),
+    links: {
+      rottenTomatoes: siteUrl(item, "tomatoes", "https://www.rottentomatoes.com"),
+      letterboxd: siteUrl(item, "letterboxd", "https://letterboxd.com"),
+    },
   }));
 }
 
@@ -323,12 +333,18 @@ export const toolDefinitions: FunctionTool[] = [
   fn("get_reviews", "Up to 5 TMDB user reviews for a title.", { type, tmdbId }),
   fn(
     "get_ratings",
-    "Ratings from MDBList for one or more titles of the same type: imdb (0-10), tomatoes (critics %), popcorn (audience %), metacritic (0-100), letterboxd (0-10, divide by 2 for stars), tmdb (0-100) and more.",
+    "Ratings from MDBList for one or more titles of the same type: imdb (0-10), tomatoes (critics %), popcorn (audience %), metacritic (0-100), letterboxd (0-10, divide by 2 for stars), tmdb (0-100) and more, plus Rotten Tomatoes and Letterboxd links.",
     { type, tmdbIds: { type: "array", items: { type: "integer" } } },
   ),
   fn(
     "acquire",
     "Get a title the user asked for: adds it to Radarr/Sonarr if missing, lets them search, and if they can't grab a release, grabs the best one that only fails the minimum-seeders rule. For TV, season targets one season; without it the whole show is searched and the fallback covers the first incomplete season. Only call when the user clearly asked to download.",
+    { type, tmdbId, season: { type: "integer" } },
+    ["type", "tmdbId"],
+  ),
+  fn(
+    "inspect_releases",
+    "Read-only look at what the indexers offer for a title already in Radarr/Sonarr: each release with quality, size, seeders and Sonarr/Radarr's rejection reasons, plus what the low-seeder fallback would grab. Use it to explain why something wasn't downloaded. Nothing is grabbed. For TV it covers one season (default: the first incomplete one).",
     { type, tmdbId, season: { type: "integer" } },
     ["type", "tmdbId"],
   ),
@@ -356,6 +372,7 @@ const labels: Record<string, (args: Args) => string> = {
   get_reviews: () => "Reading reviews…",
   get_ratings: () => "Fetching ratings…",
   acquire: () => "Getting it…",
+  inspect_releases: () => "Looking at the releases…",
   set_monitored: (a) => `${a.monitored ? "Monitoring" : "Unmonitoring"} in ${appName[a.app as App]}…`,
   get_queue: () => "Checking the download queue…",
 };
@@ -369,6 +386,7 @@ const handlers: Record<string, (cfg: Config, args: never, progress: (label: stri
   get_reviews: getReviews,
   get_ratings: getRatings,
   acquire,
+  inspect_releases: inspectReleases,
   set_monitored: setMonitored,
   get_queue: getQueue,
 };

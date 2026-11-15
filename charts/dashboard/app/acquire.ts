@@ -1,5 +1,6 @@
 // The get-it flow is deterministic code, not model judgment: add, let Sonarr/Radarr search,
 // and only if they grab nothing, take the best release whose sole rejection is the seeder minimum.
+// inspectReleases shows the same verdicts without grabbing anything.
 import type { Config } from "./server.ts";
 import { arr, appName, gb, tmdb, type App, type MediaType, type Movie, type Series } from "./tools.ts";
 import type { components as Sonarr } from "./types/sonarr.ts";
@@ -59,7 +60,8 @@ async function defaults(
 
 const describe = (r: Release) => [r.quality?.quality?.name, gb(r.size), `${r.seeders ?? 0} seeds`].join(" · ");
 
-async function fallback(cfg: Config, app: App, query: string, progress: Progress, matches: (r: Release) => boolean) {
+// Asks the indexers through Sonarr/Radarr (an interactive search: nothing is grabbed) and ranks the results.
+async function evaluate(cfg: Config, app: App, query: string, progress: Progress, matches: (r: Release) => boolean) {
   progress(`Asking ${appName[app]}'s indexers for releases…`);
   const releases = await arr<Release[]>(cfg, app, `/release?${query}`);
   progress(`Checking ${releases.length} releases…`);
@@ -75,17 +77,19 @@ async function fallback(cfg: Config, app: App, query: string, progress: Progress
     !!r.rejections?.length && r.rejections.every((x) => SEEDERS.test(x)) && !floor(r).length;
   const rank = (a: Release, b: Release) =>
     (b.qualityWeight ?? 0) - (a.qualityWeight ?? 0) || (b.seeders ?? 0) - (a.seeders ?? 0);
-  const [best] = releases.filter(qualifies).sort(rank);
+  const ranked = releases.sort(rank);
+  return { ranked, floor, best: ranked.find(qualifies) };
+}
+
+async function fallback(cfg: Config, app: App, query: string, progress: Progress, matches: (r: Release) => boolean) {
+  const { ranked, floor, best } = await evaluate(cfg, app, query, progress, matches);
 
   if (!best) {
-    const candidates = releases
-      .sort(rank)
-      .slice(0, 5)
-      .map((r) => ({
-        release: r.title,
-        summary: describe(r),
-        rejectedBecause: [...(r.rejections ?? []), ...floor(r)],
-      }));
+    const candidates = ranked.slice(0, 5).map((r) => ({
+      release: r.title,
+      summary: describe(r),
+      rejectedBecause: [...(r.rejections ?? []), ...floor(r)],
+    }));
     return {
       status: "nothing_qualified",
       message: `${appName[app]} grabbed nothing, and no release qualifies for the low-seeder fallback.`,
@@ -136,9 +140,24 @@ async function acquireMovie(cfg: Config, tmdbId: number, progress: Progress) {
   return { title, added, ...(await fallback(cfg, "radarr", `movieId=${movie.id}`, progress, () => true)) };
 }
 
-async function acquireSeries(cfg: Config, tmdbId: number, season: number | undefined, progress: Progress) {
+// Sonarr knows shows by TVDB id, so map TMDB's id across.
+async function tvdbId(cfg: Config, tmdbId: number) {
   const { tvdb_id } = await tmdb<{ tvdb_id?: number | null }>(cfg, `/tv/${tmdbId}/external_ids`);
-  if (!tvdb_id) throw new Error("TMDB has no TVDB id for this show, so Sonarr can't add it");
+  if (!tvdb_id) throw new Error("TMDB has no TVDB id for this show, so Sonarr can't track it");
+  return tvdb_id;
+}
+
+const incomplete = (s: { statistics?: { episodeCount?: number; episodeFileCount?: number } }) =>
+  (s.statistics?.episodeFileCount ?? 0) < (s.statistics?.episodeCount ?? 0);
+
+const firstIncompleteSeason = (series: Series) =>
+  series.seasons
+    ?.filter((s) => s.seasonNumber! > 0)
+    .sort((a, b) => a.seasonNumber! - b.seasonNumber!)
+    .find(incomplete)?.seasonNumber;
+
+async function acquireSeries(cfg: Config, tmdbId: number, season: number | undefined, progress: Progress) {
+  const tvdb_id = await tvdbId(cfg, tmdbId);
   let [series] = await arr<Series[]>(cfg, "sonarr", `/series?tvdbId=${tvdb_id}`);
   let added = false;
   if (!series) {
@@ -169,14 +188,7 @@ async function acquireSeries(cfg: Config, tmdbId: number, season: number | undef
     if (!series) throw new Error("Sonarr didn't load the episode list in time");
   }
 
-  const incomplete = (s: { statistics?: { episodeCount?: number; episodeFileCount?: number } }) =>
-    (s.statistics?.episodeFileCount ?? 0) < (s.statistics?.episodeCount ?? 0);
-  const target =
-    season ??
-    series.seasons
-      ?.filter((s) => s.seasonNumber! > 0)
-      .sort((a, b) => a.seasonNumber! - b.seasonNumber!)
-      .find(incomplete)?.seasonNumber;
+  const target = season ?? firstIncompleteSeason(series);
   const title = `${series.title}${season === undefined ? "" : ` season ${season}`}`;
   if (target === undefined) return { status: "already_have", title, detail: "every aired episode is on disk" };
   const targetSeason = series.seasons?.find((s) => s.seasonNumber === target);
@@ -215,6 +227,42 @@ async function acquireSeries(cfg: Config, tmdbId: number, season: number | undef
       progress,
       (r) => !!r.fullSeason && r.seasonNumber === target,
     )),
+  };
+}
+
+// Read-only: why Sonarr/Radarr skipped releases, and what the low-seeder fallback would pick.
+export async function inspectReleases(
+  cfg: Config,
+  { type, tmdbId, season }: { type: MediaType; tmdbId: number; season?: number },
+  progress: Progress,
+) {
+  let app: App, query: string, matches: (r: Release) => boolean, target: number | undefined;
+  if (type === "movie") {
+    const [movie] = await arr<Movie[]>(cfg, "radarr", `/movie?tmdbId=${tmdbId}`);
+    if (!movie) throw new Error("This movie isn't in Radarr, so it has no releases to inspect");
+    [app, query, matches] = ["radarr", `movieId=${movie.id}`, () => true];
+  } else {
+    const [series] = await arr<Series[]>(cfg, "sonarr", `/series?tvdbId=${await tvdbId(cfg, tmdbId)}`);
+    if (!series) throw new Error("This show isn't in Sonarr, so it has no releases to inspect");
+    target = season ?? firstIncompleteSeason(series);
+    if (target === undefined) throw new Error("Every aired episode is on disk; name a season to inspect");
+    [app, query] = ["sonarr", `seriesId=${series.id}&seasonNumber=${target}`];
+    matches = (r) => !!r.fullSeason && r.seasonNumber === target;
+  }
+
+  const { ranked, floor, best } = await evaluate(cfg, app, query, progress, matches);
+  return {
+    ...(target !== undefined && { season: target }),
+    total: ranked.length,
+    approved: ranked.filter((r) => r.approved).length,
+    fallbackWouldGrab: best ? { release: best.title, summary: describe(best) } : null,
+    releases: ranked.slice(0, 10).map((r) => ({
+      release: r.title,
+      summary: describe(r),
+      approved: !!r.approved,
+      rejections: r.rejections ?? [],
+      failsFallbackFloor: floor(r),
+    })),
   };
 }
 

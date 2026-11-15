@@ -436,6 +436,88 @@ test("acquire with the movie already on disk or already queued grabs nothing", a
   }
 });
 
+test("inspect_releases explains the rejections and the fallback's pick without grabbing anything", async () => {
+  const { chat, openai, radarr } = setup({
+    openai: fakeOpenAI([
+      toolCall("resp_1", "inspect_releases", { type: "movie", tmdbId: 949 }),
+      reply("resp_2", "Low seeds."),
+    ]),
+    radarr: radarrWithReleases([
+      release("720p", 720, "HDTV-720p", 8, 9, [lowSeeds(9)]),
+      release("bluray4", 1080, "Bluray-1080p", 12, 4, [lowSeeds(4)]),
+    ]),
+  });
+
+  await chat({ message: "why didn't heat download?" });
+
+  expect(radarr.called("POST", "/api/v3/release")).toHaveLength(0);
+  expect(radarr.called("POST", "/api/v3/command")).toHaveLength(0);
+  expect(toolOutput(openai, 1)).toEqual({
+    total: 2,
+    approved: 0,
+    fallbackWouldGrab: { release: "Heat.1995.bluray4", summary: "Bluray-1080p · 4.2 GB · 4 seeds" },
+    releases: [
+      {
+        release: "Heat.1995.bluray4",
+        summary: "Bluray-1080p · 4.2 GB · 4 seeds",
+        approved: false,
+        rejections: [lowSeeds(4)],
+        failsFallbackFloor: [],
+      },
+      {
+        release: "Heat.1995.720p",
+        summary: "HDTV-720p · 4.2 GB · 9 seeds",
+        approved: false,
+        rejections: [lowSeeds(9)],
+        failsFallbackFloor: ["below 1080p"],
+      },
+    ],
+  });
+});
+
+test("get_ratings returns MDBList scores with Rotten Tomatoes and Letterboxd links", async () => {
+  const { chat, openai, mdblist } = setup({
+    openai: fakeOpenAI([
+      toolCall("resp_1", "get_ratings", { type: "movie", tmdbIds: [949] }),
+      reply("resp_2", "Rated."),
+    ]),
+    mdblist: {
+      "POST /tmdb/movie/": () => [
+        {
+          title: "Heat",
+          year: 1995,
+          ids: { imdb: "tt0113277", tmdb: 949 },
+          ratings: [
+            { source: "imdb", value: 8.3, url: "114" },
+            { source: "tomatoes", value: 84, url: "/m/heat_1995" },
+            { source: "popcorn", value: 94, url: "/m/heat_1995" },
+            { source: "letterboxd", value: 8.6, url: "/film/heat-1995/" },
+            { source: "myanimelist", value: null },
+          ],
+        },
+      ],
+    },
+  });
+
+  await chat({ message: "how is heat rated?" });
+
+  const call = mdblist.calls[0]!;
+  expect(call.query.get("apikey")).toBe("mdb-key");
+  expect(call.body).toEqual({ ids: [949] });
+  expect(toolOutput(openai, 1)).toEqual([
+    {
+      title: "Heat",
+      year: 1995,
+      tmdbId: 949,
+      ratings: { imdb: 8.3, tomatoes: 84, popcorn: 94, letterboxd: 8.6 },
+      links: {
+        rottenTomatoes: "https://www.rottentomatoes.com/m/heat_1995",
+        letterboxd: "https://letterboxd.com/film/heat-1995/",
+      },
+    },
+  ]);
+});
+
 test("the turn completes and the grab happens even when the client disconnects mid-stream", async () => {
   let polls = 0;
   const { url, openai, radarr } = setup({
