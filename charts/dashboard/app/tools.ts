@@ -277,6 +277,110 @@ async function getQueue(cfg: Config) {
   ];
 }
 
+// Transmission 4.1+ speaks JSON-RPC 2.0 with snake_case names; the older protocol is deprecated.
+type Torrent = {
+  name: string;
+  status: number;
+  percent_done: number;
+  size_when_done: number;
+  rate_download: number;
+  rate_upload: number;
+  eta: number;
+  peers_connected: number;
+  peers_sending_to_us: number;
+  upload_ratio: number;
+  error: number;
+  error_string: string;
+  labels: string[];
+};
+const TORRENT_STATUS = [
+  "stopped",
+  "queued to verify",
+  "verifying",
+  "queued",
+  "downloading",
+  "queued to seed",
+  "seeding",
+];
+
+let transmissionSession = "";
+async function transmission<T>(cfg: Config, method: string, params: Record<string, unknown>): Promise<T> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(cfg.transmission.url, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-transmission-session-id": transmissionSession },
+      body: JSON.stringify({ jsonrpc: "2.0", method, params, id: 1 }),
+    }).catch((e) => {
+      throw new Error(`Transmission is unreachable: ${e.message}`);
+    });
+    // Transmission's CSRF guard: a 409 hands out the session id to resend the request with.
+    if (res.status === 409) {
+      transmissionSession = res.headers.get("x-transmission-session-id") ?? "";
+      continue;
+    }
+    if (!res.ok) throw new Error(`Transmission returned HTTP ${res.status} for ${method}`);
+    const body = (await res.json()) as { result?: T; error?: { message: string; data?: { error_string?: string } } };
+    if (body.error) throw new Error(`Transmission: ${body.error.data?.error_string ?? body.error.message}`);
+    return body.result!;
+  }
+  throw new Error("Transmission kept rejecting the session id");
+}
+
+const speed = (bytesPerSecond: number) => `${(bytesPerSecond / 1024 ** 2).toFixed(1)} MB/s`;
+const duration = (seconds: number) =>
+  seconds >= 3600
+    ? `${Math.floor(seconds / 3600)}h ${Math.round((seconds % 3600) / 60)}m`
+    : `${Math.ceil(seconds / 60)}m`;
+
+async function getTorrents(cfg: Config) {
+  const [{ torrents }, stats] = await Promise.all([
+    transmission<{ torrents: Torrent[] }>(cfg, "torrent_get", {
+      fields: [
+        "name",
+        "status",
+        "percent_done",
+        "size_when_done",
+        "rate_download",
+        "rate_upload",
+        "eta",
+        "peers_connected",
+        "peers_sending_to_us",
+        "upload_ratio",
+        "error",
+        "error_string",
+        "labels",
+      ],
+    }),
+    transmission<{ download_speed: number; upload_speed: number }>(cfg, "session_stats", {}),
+  ]);
+  // Unfinished or failing torrents are what questions are about, so they are always listed in full;
+  // healthy finished ones fill the remaining room.
+  const needsAttention = (t: Torrent) => t.percent_done < 1 || t.error !== 0;
+  const problems = torrents.filter(needsAttention).sort((a, b) => a.percent_done - b.percent_done);
+  const healthy = torrents.filter((t) => !needsAttention(t));
+  const listed = [...problems, ...healthy.slice(0, Math.max(0, 50 - problems.length))];
+  return {
+    downloadSpeed: speed(stats.download_speed),
+    uploadSpeed: speed(stats.upload_speed),
+    total: torrents.length,
+    ...(listed.length < torrents.length && { healthyNotListed: torrents.length - listed.length }),
+    torrents: listed.map((t) => ({
+      name: t.name,
+      category: t.labels.join(", ") || undefined,
+      status: TORRENT_STATUS[t.status] ?? `status ${t.status}`,
+      progress: `${Math.round(t.percent_done * 100)}%`,
+      size: gb(t.size_when_done),
+      down: t.rate_download ? speed(t.rate_download) : undefined,
+      up: t.rate_upload ? speed(t.rate_upload) : undefined,
+      // Negative values are libtransmission's "unknown" markers.
+      eta: t.eta >= 0 ? duration(t.eta) : undefined,
+      peers: `${t.peers_sending_to_us} of ${t.peers_connected} connected are sending`,
+      ratio: t.upload_ratio >= 0 ? t.upload_ratio.toFixed(2) : undefined,
+      error: t.error ? t.error_string : undefined,
+    })),
+  };
+}
+
 export const gb = (bytes?: number) => (bytes ? `${(bytes / 1024 ** 3).toFixed(1)} GB` : undefined);
 
 async function setMonitored(
@@ -364,6 +468,10 @@ export const toolDefinitions: FunctionTool[] = [
     ["app", "id", "monitored"],
   ),
   fn("get_queue", "What Sonarr and Radarr are downloading right now, with progress."),
+  fn(
+    "get_torrents",
+    "Everything in Transmission, the download client: each torrent's state, progress, speed, peers, ETA, seed ratio and errors, including torrents added outside Sonarr/Radarr, plus total speeds. Use it with get_queue to explain slow or stuck downloads.",
+  ),
 ];
 
 type Args = Record<string, unknown>;
@@ -379,6 +487,7 @@ const labels: Record<string, (args: Args) => string> = {
   inspect_releases: () => "Looking at the releases…",
   set_monitored: (a) => `${a.monitored ? "Monitoring" : "Unmonitoring"} in ${appName[a.app as App]}…`,
   get_queue: () => "Checking the download queue…",
+  get_torrents: () => "Checking Transmission…",
 };
 
 // Arguments come from the model; runTool checks them against each tool's JSON schema above.
@@ -393,6 +502,7 @@ const handlers: Record<string, (cfg: Config, args: never, progress: (label: stri
   inspect_releases: inspectReleases,
   set_monitored: setMonitored,
   get_queue: getQueue,
+  get_torrents: getTorrents,
 };
 
 type Schema = { type: string; enum?: unknown[]; items?: Schema };

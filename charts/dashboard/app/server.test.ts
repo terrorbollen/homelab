@@ -79,6 +79,7 @@ function setup(
     radarr?: Routes;
     tmdb?: Routes;
     mdblist?: Routes;
+    transmission?: Routes;
     tmdbKey?: string;
   },
   overrides: Partial<Config> = {},
@@ -87,6 +88,7 @@ function setup(
   const radarr = fake(upstreams.radarr ?? {});
   const tmdb = fake(upstreams.tmdb ?? {});
   const mdblist = fake(upstreams.mdblist ?? {});
+  const transmission = fake(upstreams.transmission ?? {});
   const server = createServer({
     port: 0,
     prompt: "test prompt",
@@ -101,6 +103,7 @@ function setup(
     radarr: { url: radarr.url, key: "radarr-key" },
     tmdb: { url: tmdb.url, key: upstreams.tmdbKey ?? "tmdb-v3-key" },
     mdblist: { url: mdblist.url, key: "mdb-key" },
+    transmission: { url: `${transmission.url}/transmission/rpc` },
     maxToolRounds: 8,
     keepAliveMs: 1_000,
     pollMs: 5,
@@ -117,7 +120,16 @@ function setup(
     });
     return parseSSE(await res.text());
   };
-  return { chat, url: `http://localhost:${server.port}`, openai: upstreams.openai, sonarr, radarr, tmdb, mdblist };
+  return {
+    chat,
+    url: `http://localhost:${server.port}`,
+    openai: upstreams.openai,
+    sonarr,
+    radarr,
+    tmdb,
+    mdblist,
+    transmission,
+  };
 }
 
 function parseSSE(text: string) {
@@ -588,6 +600,137 @@ test("get_ratings returns MDBList scores with vote counts and Rotten Tomatoes an
       },
     },
   ]);
+});
+
+test("get_torrents does Transmission's session handshake and reports every torrent, unfinished first", async () => {
+  const { chat, openai, transmission } = setup({
+    openai: fakeOpenAI([toolCall("resp_1", "get_torrents"), reply("resp_2", "One is stalled.")]),
+    transmission: {
+      "POST /transmission/rpc": (c) => {
+        // Like the real server, refuse requests without the current session id.
+        if (c.headers.get("x-transmission-session-id") !== "sess-1")
+          return new Response("", { status: 409, headers: { "x-transmission-session-id": "sess-1" } });
+        if (c.body.method === "session_stats")
+          return { jsonrpc: "2.0", id: c.body.id, result: { download_speed: 3 * 1024 ** 2, upload_speed: 512 * 1024 } };
+        const torrent = {
+          rate_upload: 0,
+          peers_connected: 0,
+          peers_sending_to_us: 0,
+          error: 0,
+          error_string: "",
+          labels: [],
+        };
+        return {
+          jsonrpc: "2.0",
+          id: c.body.id,
+          result: {
+            torrents: [
+              {
+                ...torrent,
+                name: "Heat.1995.1080p",
+                status: 6,
+                percent_done: 1,
+                size_when_done: 8 * 1024 ** 3,
+                rate_download: 0,
+                eta: -1,
+                upload_ratio: 1.5,
+                labels: ["radarr"],
+              },
+              {
+                ...torrent,
+                name: "Manual.Add.Linux.iso",
+                status: 4,
+                percent_done: 0.25,
+                size_when_done: 4 * 1024 ** 3,
+                rate_download: 3 * 1024 ** 2,
+                eta: 4500,
+                peers_connected: 12,
+                peers_sending_to_us: 3,
+                upload_ratio: -1,
+                error: 2,
+                error_string: "Tracker gave HTTP 404",
+              },
+            ],
+          },
+        };
+      },
+    },
+  });
+
+  await chat({ message: "why is it slow?" });
+
+  const calls = transmission.called("POST", "/transmission/rpc");
+  expect(calls.every((c) => c.body.jsonrpc === "2.0")).toBe(true);
+  expect(calls.find((c) => c.body.method === "torrent_get")!.body.params.fields).toContain("peers_sending_to_us");
+  expect(toolOutput(openai, 1)).toEqual({
+    downloadSpeed: "3.0 MB/s",
+    uploadSpeed: "0.5 MB/s",
+    total: 2,
+    torrents: [
+      {
+        name: "Manual.Add.Linux.iso",
+        status: "downloading",
+        progress: "25%",
+        size: "4.0 GB",
+        down: "3.0 MB/s",
+        eta: "1h 15m",
+        peers: "3 of 12 connected are sending",
+        error: "Tracker gave HTTP 404",
+      },
+      {
+        name: "Heat.1995.1080p",
+        category: "radarr",
+        status: "seeding",
+        progress: "100%",
+        size: "8.0 GB",
+        peers: "0 of 0 connected are sending",
+        ratio: "1.50",
+      },
+    ],
+  });
+});
+
+test("get_torrents always lists failing torrents, even when healthy ones fill the cap", async () => {
+  const torrent = (name: string, error = 0) => ({
+    name,
+    status: 6,
+    percent_done: 1,
+    size_when_done: 1024 ** 3,
+    rate_download: 0,
+    rate_upload: 0,
+    eta: -1,
+    peers_connected: 0,
+    peers_sending_to_us: 0,
+    upload_ratio: 1,
+    error,
+    error_string: error ? "Please Verify Local Data! Piece #55 is corrupt." : "",
+    labels: [],
+  });
+  const healthy = Array.from({ length: 60 }, (_, i) => torrent(`Healthy.${i}`));
+  const { chat, openai } = setup({
+    openai: fakeOpenAI([toolCall("resp_1", "get_torrents"), reply("resp_2", "One is corrupt.")]),
+    transmission: {
+      "POST /transmission/rpc": (c) => ({
+        jsonrpc: "2.0",
+        id: c.body.id,
+        result:
+          c.body.method === "session_stats"
+            ? { download_speed: 0, upload_speed: 0 }
+            : { torrents: [...healthy, torrent("Corrupt.One", 3)] },
+      }),
+    },
+  });
+
+  await chat({ message: "any broken torrents?" });
+
+  const output = toolOutput(openai, 1);
+  expect(output.total).toBe(61);
+  expect(output.torrents).toHaveLength(50);
+  expect(output.torrents[0]).toMatchObject({
+    name: "Corrupt.One",
+    error: "Please Verify Local Data! Piece #55 is corrupt.",
+  });
+  expect(output.healthyNotListed).toBe(11);
 });
 
 test("the turn completes and the grab happens even when the client disconnects mid-stream", async () => {

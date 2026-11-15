@@ -42,6 +42,8 @@ spec:
               value: http://media-sonarr.media.svc/sonarr
             - name: RADARR_URL
               value: http://media-radarr.media.svc/radarr
+            - name: TRANSMISSION_URL
+              value: http://media-transmission.media.svc/transmission/rpc
           readinessProbe:
             httpGet:
               path: /api/health

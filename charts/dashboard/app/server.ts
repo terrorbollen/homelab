@@ -9,6 +9,7 @@ export type Config = {
   radarr: { url: string; key: string };
   tmdb: { url: string; key: string };
   mdblist: { url: string; key: string };
+  transmission: { url: string };
   maxToolRounds: number;
   keepAliveMs: number;
   pollMs: number;
@@ -42,6 +43,7 @@ export async function configFromEnv(): Promise<Config> {
     radarr: { url: env("RADARR_URL"), key: env("RADARR_API_KEY") },
     tmdb: { url: env("TMDB_URL", "https://api.themoviedb.org/3"), key: env("TMDB_API_KEY") },
     mdblist: { url: env("MDBLIST_URL", "https://api.mdblist.com"), key: env("MDBLIST_API_KEY") },
+    transmission: { url: env("TRANSMISSION_URL") },
     maxToolRounds: Number(env("MAX_TOOL_ROUNDS", "8")),
     keepAliveMs: 5_000,
     pollMs: 2_000,
