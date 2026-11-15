@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-agent
+data:
+{{- range list "server.ts" "openai.ts" "tools.ts" "acquire.ts" "prompt.txt" }}
+  {{ . }}: |
+{{ $.Files.Get (printf "agent/%s" .) | indent 4 }}
+{{- end }}

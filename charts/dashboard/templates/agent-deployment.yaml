@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashboard-agent
+  template:
+    metadata:
+      labels:
+        app: dashboard-agent
+      annotations:
+        # The code lives in the ConfigMap, so roll the pod when it changes.
+        checksum/code: {{ include (print $.Template.BasePath "/agent-configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: bun
+          image: {{ .Values.agent.image }}
+          command: ["bun", "/app/server.ts"]
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: dashboard-agent-keys
+          env:
+            - name: OPENAI_MODEL
+              value: {{ .Values.agent.model | quote }}
+            - name: OPENAI_REASONING_EFFORT
+              value: {{ .Values.agent.reasoningEffort | quote }}
+            - name: SONARR_URL
+              value: http://media-sonarr.media.svc/sonarr
+            - name: RADARR_URL
+              value: http://media-radarr.media.svc/radarr
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: code
+              mountPath: /app
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: code
+          configMap:
+            name: dashboard-agent
