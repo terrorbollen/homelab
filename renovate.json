@@ -7,10 +7,18 @@
   "postUpdateOptions": ["helmUpdateSubChartArchives"],
   "packageRules": [
     {
-      "description": "Automerge patch/minor docker image and Helm chart bumps",
+      "description": "Automerge patch/minor docker image and Helm chart bumps once they are 3 days old. ignoreTests makes automerge skip status checks, so the delay holds only because strict internalChecksFilter keeps the branch from being created; releases without a timestamp (any registry but Docker Hub) wait on the Dependency Dashboard for a manual unpend rather than skipping the delay",
       "matchDatasources": ["docker", "helm"],
       "matchUpdateTypes": ["patch", "minor"],
-      "automerge": true
+      "automerge": true,
+      "minimumReleaseAge": "3 days",
+      "minimumReleaseAgeBehaviour": "timestamp-required",
+      "internalChecksFilter": "strict"
+    },
+    {
+      "description": "Pin images in values.yaml to tag@digest; the helm-values manager defaults pinDigests to false, so it must be set in a package rule",
+      "matchManagers": ["helm-values"],
+      "pinDigests": true
     },
     {
       "description": "Never automerge major docker image or Helm chart bumps",
