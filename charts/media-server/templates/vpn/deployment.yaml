@@ -42,6 +42,13 @@ spec:
               value: 10.42.0.0/16,10.43.0.0/16,192.168.0.0/24
             - name: DNS_REBINDING_PROTECTION_EXEMPT_HOSTNAMES
               value: media.192.168.0.36.nip.io
+          # The pod keeps its network namespace across container restarts, so
+          # WireGuard rules left by a crashed gluetun make the next one fail
+          # with "file exists". Clear them on start.
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "(ip rule del table 51820; ip -6 rule del table 51820) || true"]
           livenessProbe:
             exec:
               command: ["/gluetun-entrypoint", "healthcheck"]
