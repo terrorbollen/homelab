@@ -1,0 +1,8 @@
+# Terraform local state - may contain resolved values in plaintext
+terraform.tfstate
+terraform.tfstate.backup
+# Home IPs live here; the repo is public
+*.tfvars
+
+# Provider binaries - reinstalled via `terraform init`, keep .terraform.lock.hcl tracked
+.terraform/
