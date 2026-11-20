@@ -6,8 +6,10 @@ spec:
   hostname: cluster-subnet-router
   subnetRouter:
     advertiseRoutes:
-      - "10.42.0.0/16"
-      - "10.43.0.0/16"
-      - "192.168.0.0/24"
+      # Only the nodes, not the whole LAN (keeps the router admin page out).
+      # Auto-approved by the policy in terraform/tailscale/acl.tf.
+      - "192.168.0.36/32"
+      - "192.168.0.32/32"
+      - "192.168.0.2/32"
 
 
