@@ -257,7 +257,7 @@ resource "radarr_quality_profile" "hd_720p" {
 
 resource "radarr_quality_profile" "hd_1080p" {
   name                     = "HD-1080p"
-  upgrade_allowed          = false
+  upgrade_allowed          = true
   cutoff                   = 7
   min_format_score         = 0
   cutoff_format_score      = 0
@@ -267,11 +267,6 @@ resource "radarr_quality_profile" "hd_1080p" {
     name = "Original"
   }
   quality_groups = [
-    {
-      qualities = [
-        { id = 30, name = "Remux-1080p", resolution = 1080, source = "bluray" }
-      ]
-    },
     {
       qualities = [
         { id = 7, name = "Bluray-1080p", resolution = 1080, source = "bluray" }
