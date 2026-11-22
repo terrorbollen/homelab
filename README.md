@@ -75,7 +75,7 @@ flowchart LR
 
 **Edge security.** `terraform/cloudflare` handles TLS 1.2+ enforcement, a WAF with an IP allowlist for the media apps, rate limiting, AI-crawler blocking, SPF/DMARC and tunnel routing.
 
-**Access tiers.** Public apps go through Cloudflare. Internal tools are reachable only from the LAN or over Tailscale.
+**Access tiers.** Public apps go through Cloudflare. Internal tools are reachable only from the LAN or over Tailscale. The Tailscale subnet router advertises only the three nodes, and `terraform/tailscale` holds the policy: the owner can reach Traefik, SSH and the Kubernetes API, nothing else on the LAN, and cluster devices can't initiate connections.
 
 ## Design decisions
 
