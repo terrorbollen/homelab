@@ -52,7 +52,7 @@ immich:
 postgres:
   image:
     repository: ghcr.io/immich-app/postgres
-    tag: 14-vectorchord0.4.3-pgvectors0.2.0
+    tag: 16-vectorchord0.4.3-pgvectors0.2.0
   storage:
     # beelink's root disk (where local-path provisions from) only has ~30Gi
     # free today. Small to start; allowVolumeExpansion is on, so grow it
