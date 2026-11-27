@@ -17,7 +17,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/bun": "1.4.4",
-    "eslint": "10.15.0",
+    "eslint": "10.16.0",
     "globals": "17.14.0",
     "openapi-typescript": "7.13.0",
     "prettier": "3.10.1",
